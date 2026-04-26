@@ -70,6 +70,7 @@
 .lempi-header__brand span.connected {
 	background: #1fd36a;
 	box-shadow: 0 0 10px rgba(31, 211, 106, 0.8);
+	animation: lempiLivePulse 1.4s ease-in-out infinite;
 }
 
 .lempi-header__balance {
@@ -203,32 +204,6 @@
 	background: #0b0b12;
 }
 
-.lempi-stage__top {
-	position: absolute;
-	left: 18px;
-	right: 18px;
-	top: 12px;
-	z-index: 4;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	pointer-events: none;
-}
-
-.lempi-live-dot {
-	width: 10px;
-	height: 10px;
-	border-radius: 999px;
-	background: #7c8482;
-	box-shadow: 0 0 0 rgba(31, 211, 106, 0);
-}
-
-.lempi-live-dot.connected {
-	background: #1fd36a;
-	box-shadow: 0 0 12px rgba(31, 211, 106, 0.9);
-	animation: lempiLivePulse 1.4s ease-in-out infinite;
-}
-
 @keyframes lempiLivePulse {
 	0%,
 	100% {
@@ -239,13 +214,6 @@
 		transform: scale(1.18);
 		opacity: 1;
 	}
-}
-
-.lempi-stage__top strong {
-	padding: 7px 12px;
-	border-radius: 8px;
-	background: rgba(0, 0, 0, 0.42);
-	font-family: var(--font-numbers);
 }
 
 .lempi-canvas {
@@ -262,7 +230,7 @@
 .lempi-toasts {
 	position: absolute;
 	left: 14px;
-	top: 36px;
+	top: 14px;
 	z-index: 5;
 	display: flex;
 	flex-direction: column;
@@ -394,10 +362,10 @@
 	min-height: 86px;
 	border: 0;
 	border-radius: 8px;
-	background: #28ad4d;
+	background: linear-gradient(180deg, #35d760 0%, #1fa846 100%);
 	box-shadow:
 		inset 0 -4px 0 rgba(0, 0, 0, 0.2),
-		0 8px 18px rgba(40, 173, 77, 0.16);
+		0 8px 18px rgba(40, 220, 98, 0.22);
 	cursor: pointer;
 	transition:
 		filter 0.14s ease,
@@ -410,6 +378,14 @@
 	cursor: not-allowed;
 	background: #2c2f2d;
 	box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+}
+
+.lempi-bet:not(.active):not(.cashed_out):not(.lost)
+	.lempi-bet__action:not(:disabled) {
+	background: linear-gradient(180deg, #48ee74 0%, #22b84c 100%);
+	box-shadow:
+		inset 0 -4px 0 rgba(0, 0, 0, 0.2),
+		0 10px 22px rgba(44, 230, 100, 0.3);
 }
 
 .lempi-bet__action:not(:disabled):hover {
@@ -441,7 +417,7 @@
 }
 
 .lempi-bet.cashed_out .lempi-bet__action {
-	background: #22a14b;
+	background: linear-gradient(180deg, #35d760 0%, #22a14b 100%);
 }
 
 .lempi-bet.lost .lempi-bet__action {

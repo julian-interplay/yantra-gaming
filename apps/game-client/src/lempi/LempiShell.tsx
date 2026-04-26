@@ -95,13 +95,6 @@ export const LempiShell: React.FC = () => {
 				</aside>
 
 				<section className="lempi-stage">
-					<div className="lempi-stage__top">
-						<span
-							className={`lempi-live-dot ${isConnected ? "connected" : ""}`}
-							aria-hidden="true"
-						/>
-						<strong>{formatHnl(balanceMicro, true)}</strong>
-					</div>
 					<LempiCanvas />
 					<div className="lempi-toasts">
 						{toasts.map((toast) => (

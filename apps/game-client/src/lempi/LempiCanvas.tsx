@@ -10,7 +10,6 @@ import {
 import type React from "react";
 import { useEffect, useRef } from "react";
 import backgroundUrl from "../assets/lempi/background.png";
-import idolUrl from "../assets/lempi/idol.png";
 import pilotUrl from "../assets/lempi/pilot.png";
 import { useLempiStore } from "./LempiStore";
 
@@ -42,13 +41,11 @@ export const LempiCanvas: React.FC = () => {
 
 			const bgTexture = await Assets.load<Texture>(backgroundUrl);
 			const pilotTexture = await Assets.load<Texture>(pilotUrl);
-			const idolTexture = await Assets.load<Texture>(idolUrl);
 
 			const world = new Container();
 			const bg1 = new Sprite(bgTexture);
 			const bg2 = new Sprite(bgTexture);
 			const shade = new Graphics();
-			const idol = new Sprite(idolTexture);
 			const pilot = new Sprite(pilotTexture);
 			const flame = new Graphics();
 			const multiplierText = new Text({
@@ -56,39 +53,29 @@ export const LempiCanvas: React.FC = () => {
 				style: {
 					fill: 0xffffff,
 					fontFamily: "Orbitron, system-ui",
-					fontSize: 92,
+					fontSize: 72,
 					fontWeight: "900",
-					dropShadow: { color: 0x000000, alpha: 0.6, blur: 8, distance: 4 },
+					dropShadow: { color: 0x000000, alpha: 0.5, blur: 5, distance: 3 },
 				},
 			});
 			const statusText = new Text({
 				text: "",
 				style: {
-					fill: 0xf1c84b,
+					fill: 0xf0c84c,
 					fontFamily: "Rajdhani, system-ui",
-					fontSize: 32,
-					fontWeight: "800",
+					fontSize: 22,
+					fontWeight: "900",
 					letterSpacing: 2,
+					dropShadow: { color: 0x000000, alpha: 0.45, blur: 4, distance: 2 },
 				},
 			});
 
 			pilot.anchor.set(0.5);
-			pilot.scale.set(0.28);
-			idol.anchor.set(0.5, 1);
-			idol.alpha = 0.7;
+			pilot.scale.set(0.14);
 			multiplierText.anchor.set(0.5);
 			statusText.anchor.set(0.5);
 
-			world.addChild(
-				bg1,
-				bg2,
-				shade,
-				idol,
-				flame,
-				pilot,
-				multiplierText,
-				statusText,
-			);
+			world.addChild(bg1, bg2, shade, flame, pilot, multiplierText, statusText);
 			app.stage.addChild(world);
 
 			let scroll = 0;
@@ -110,46 +97,45 @@ export const LempiCanvas: React.FC = () => {
 				shade.rect(0, 0, w, h);
 				shade.fill({ color: 0x1b1024, alpha: 0.16 });
 
-				idol.x = Math.min(w - 120, w * 0.86);
-				idol.y = h - 16;
-				idol.scale.set(Math.min(0.34, Math.max(0.18, w / 3600)));
+				multiplierText.x = w * 0.61;
+				multiplierText.y = h * 0.36;
+				multiplierText.style.fontSize = Math.max(34, Math.min(72, w * 0.12));
 
-				multiplierText.x = w * 0.55;
-				multiplierText.y = h * 0.42;
-				multiplierText.style.fontSize = Math.max(54, Math.min(132, w * 0.105));
-
-				statusText.x = w * 0.5;
-				statusText.y = h * 0.18;
-				statusText.style.fontSize = Math.max(22, Math.min(38, w * 0.032));
+				statusText.x = w * 0.61;
+				statusText.y = h * 0.17;
+				statusText.style.fontSize = Math.max(14, Math.min(20, w * 0.036));
 			};
 
 			const resizeObserver = new ResizeObserver(layout);
 			resizeObserver.observe(container);
 			layout();
 
-			const unsubscribe = useLempiStore.subscribe((state) => {
-				multiplierText.text =
-					state.roundState === "RESULT" && state.crashMultiplier
-						? `${state.crashMultiplier.toFixed(2)}x`
-						: `${state.multiplier.toFixed(2)}x`;
-				statusText.text =
-					state.roundState === "BETTING_OPEN"
-						? `GET READY  ${state.timeRemaining}s`
-						: state.roundState === "RESULT"
-							? "CRASHED"
-							: state.roundState === "ROLLING"
-								? "FLYING"
-								: "";
-			});
-
 			app.ticker.add(() => {
 				const state = useLempiStore.getState();
 				const w = app.screen.width;
 				const h = app.screen.height;
+				const displayMultiplier =
+					state.roundState === "RESULT" && state.crashMultiplier
+						? state.crashMultiplier
+						: state.multiplier;
+				multiplierText.text =
+					state.roundState === "BETTING_OPEN"
+						? `${state.timeRemaining}s`
+						: `${displayMultiplier.toFixed(2)}x`;
+				statusText.text =
+					state.roundState === "BETTING_OPEN"
+						? "PREPARATE"
+						: state.roundState === "RESULT"
+							? "EXPLOTO"
+							: state.roundState === "ROLLING"
+								? "VOLANDO"
+								: "";
+
 				const speed =
 					state.roundState === "ROLLING"
-						? 2.4 + Math.min(8, state.multiplier * 0.7)
-						: 0.35;
+						? 0.55 +
+							Math.min(4.6, Math.max(0, state.multiplier - 1) ** 0.9 * 0.48)
+						: 0.12;
 				scroll = (scroll + speed) % Math.max(1, bg1.width - 2);
 				bg1.x = -scroll;
 				bg2.x = bg1.x + bg1.width - 2;
@@ -157,13 +143,13 @@ export const LempiCanvas: React.FC = () => {
 				const fly = state.roundState === "ROLLING";
 				const crashed = state.roundState === "RESULT";
 				const targetX = fly
-					? w * 0.31 + Math.min(w * 0.16, state.multiplier * 14)
-					: w * 0.2;
+					? w * 0.26 + Math.min(w * 0.14, state.multiplier * 10)
+					: w * 0.17;
 				const targetY = crashed
-					? h * 0.64
+					? h * 0.62
 					: fly
-						? h * 0.58 - Math.min(h * 0.22, state.multiplier * 13)
-						: h * 0.68;
+						? h * 0.58 - Math.min(h * 0.2, state.multiplier * 9)
+						: h * 0.66;
 				pilot.x += (targetX - pilot.x) * 0.08;
 				pilot.y += (targetY - pilot.y) * 0.08;
 				pilot.rotation = crashed ? 0.75 : fly ? -0.28 : -0.12;
@@ -171,15 +157,14 @@ export const LempiCanvas: React.FC = () => {
 
 				flame.clear();
 				if (fly) {
-					flame.ellipse(pilot.x - 88, pilot.y + 48, 56, 18);
+					flame.ellipse(pilot.x - 44, pilot.y + 24, 28, 9);
 					flame.fill({ color: 0xffd04d, alpha: 0.78 });
-					flame.ellipse(pilot.x - 115, pilot.y + 58, 76, 26);
+					flame.ellipse(pilot.x - 58, pilot.y + 29, 38, 13);
 					flame.fill({ color: 0xf04a31, alpha: 0.34 });
 				}
 			});
 
 			cleanup = () => {
-				unsubscribe();
 				resizeObserver.disconnect();
 				app.destroy(true, { children: true });
 			};

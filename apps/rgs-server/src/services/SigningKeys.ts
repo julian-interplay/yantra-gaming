@@ -277,7 +277,7 @@ export async function signLaunchJwt(args: {
   const signingInput = `${headerB64}.${payloadB64}`;
 
   const privateKey = jwkToPrivateKey(key.privateJwk);
-  const derSig = crypto.sign(null, Buffer.from(signingInput), {
+  const derSig = crypto.sign('sha256', Buffer.from(signingInput), {
     key: privateKey,
     dsaEncoding: 'der',
   });
@@ -312,7 +312,7 @@ export async function verifyLaunchJwt(
   const joseSig = fromBase64Url(s!);
   const derSig = joseToDer(joseSig);
   const signingInput = `${h}.${p}`;
-  const ok = crypto.verify(null, Buffer.from(signingInput), {
+  const ok = crypto.verify('sha256', Buffer.from(signingInput), {
     key: publicKey,
     dsaEncoding: 'der',
   }, derSig);

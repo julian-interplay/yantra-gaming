@@ -128,7 +128,7 @@ Returns a `CreateSessionResult` with:
 | `sessionId` | `string` | The RGS-assigned session id. |
 | `sessionToken` | `string` | JWT used by the game-client to open its socket. Embedded in `launchUrl`. |
 | `launchUrl` | `string` | The URL to redirect the player to (or put in an `<iframe src>`). |
-| `expiresAt` | `string` (ISO 8601) | Session TTL, never more than 60 minutes from now. |
+| `expiresAt` | `string` (ISO 8601) | Authoritative session expiry. Defaults to 4 hours; `sessionTtlSeconds` is capped to 5 minutes minimum and 8 hours maximum. |
 | `serverSeedHash` | `string` | Hex SHA-256 of the server seed committed at session creation. The RGS will reveal the seed later via `/v1/rounds/:id/proof`. |
 | `requestUuid` | `string` | Echo of the request UUID used (auto-generated if you didn't supply one). |
 

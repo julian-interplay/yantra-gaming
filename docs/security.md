@@ -258,15 +258,17 @@ Player session tokens are short-lived HS256 JWTs:
   "mode":         "real",
   "rgLimits":     { "dailyLossMicro": "…", "dailyWagerMicro": "…", "sessionTimeSeconds": 3600 },
   "iat":          1745400000,
-  "exp":          1745403600
+  "exp":          1745414400
 }
 ```
 
 Rules:
 
 - Signed with `SESSION_JWT_SECRET`. Separate from the operator signing secret.
-- Max lifetime 60 minutes; the `exp` claim is enforced on every socket handshake and
-  every REST call scoped to a session.
+- Default lifetime is 4 hours. Operators may request `sessionTtlSeconds` at
+  session creation; the RGS applies server-side min/max caps and enforces the
+  resulting `exp` claim on every socket handshake and every REST call scoped to
+  a session.
 - Single player, single game, single currency per token.
 - The token is conveyed via the `launchUrl` query string and placed into
   `socket.handshake.auth.token` for the WebSocket leg. Not stored in `localStorage`;

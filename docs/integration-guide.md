@@ -95,6 +95,7 @@ export async function launchKetapolaDice(playerId: string) {
     jurisdiction: 'LK',
     mode:        'real',
     returnUrl:   'https://casino.example.com/lobby',
+    sessionTtlSeconds: 14_400,              // optional; defaults to 4 hours
   });
 
   return {
@@ -145,6 +146,10 @@ Key points:
   internal user id is fine. Do not send a raw email or phone number.
 - `clientSeed` is optional. If omitted, the RGS generates one. The value is bound to
   the session and used to derive round outcomes (see [provably-fair.md](./provably-fair.md)).
+- `sessionTtlSeconds` is optional. It controls the launch credential lifetime only;
+  the RGS returns the authoritative `expiresAt` after applying server-side caps
+  of 5 minutes minimum and 8 hours maximum. Keep responsible-gaming duration
+  caps in `rgLimits.sessionTimeSeconds`.
 - `serverSeedHash` is the commit half of the provably-fair scheme. Surface it to the
   player, they can verify every round after the fact.
 

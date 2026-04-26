@@ -173,9 +173,9 @@ The production lifecycle is:
    referencing the original bet transaction.
 
 Set `sessionTtlSeconds` on `POST /v1/session` when you need a custom launch
-credential lifetime. The RGS defaults to 4 hours and applies server-side caps;
-`rgLimits.sessionTimeSeconds` remains separate and should only be used for
-responsible-gaming time limits.
+credential lifetime. The RGS defaults to 4 hours and caps requests to the
+5-minute to 8-hour server policy range; `rgLimits.sessionTimeSeconds` remains
+separate and should only be used for responsible-gaming time limits.
 
 The wallet API and signing rules are documented in:
 

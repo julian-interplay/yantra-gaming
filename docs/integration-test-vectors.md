@@ -99,11 +99,13 @@ After `POST /v1/session` succeeds, the response carries a `sessionToken`: the pl
   "mode": "real",
   "rgLimits": { "dailyLossMicro": "5000000" },
   "iat": 1745500000,
-  "exp": 1745503600
+  "exp": 1745514400
 }
 ```
 
-- `exp - iat` ≤ 3600 (hard cap, sessions are short-lived).
+- `exp - iat` defaults to 14,400 seconds. Operators may request
+  `sessionTtlSeconds`; the RGS caps the effective lifetime to 5 minutes
+  minimum and 8 hours maximum.
 - `alg`: `HS256` today; `RS256` via JWKS is roadmapped for v1.1.
 
 Operators rarely need to decode this, the player iframe just forwards it.

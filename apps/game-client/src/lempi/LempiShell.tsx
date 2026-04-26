@@ -1,7 +1,5 @@
 import type React from "react";
 import { useEffect, useState } from "react";
-import { Header } from "../ui/Header";
-import { OfflineBanner } from "../ui/OfflineBanner";
 import { SessionExpiryBanner } from "../ui/SessionExpiryBanner";
 import { LempiCanvas } from "./LempiCanvas";
 import { LempiControls } from "./LempiControls";
@@ -36,10 +34,23 @@ export const LempiShell: React.FC = () => {
 	}, []);
 
 	return (
-		<div className="lempi-page">
-			<OfflineBanner />
+		<div className={`lempi-page ${isConnected ? "" : "is-reconnecting"}`}>
+			{!isConnected && (
+				<div className="lempi-reconnect" role="status" aria-live="polite">
+					Reconnecting to game server...
+				</div>
+			)}
 			<SessionExpiryBanner />
-			<Header onInfoClick={() => {}} />
+			<header className="lempi-header">
+				<div className="lempi-header__brand">
+					<strong>Lempi Crash</strong>
+					<span className={isConnected ? "connected" : ""} />
+				</div>
+				<div className="lempi-header__balance">
+					<span>Balance</span>
+					<strong>{formatHnl(balanceMicro, true)}</strong>
+				</div>
+			</header>
 
 			<main className="lempi-layout">
 				<aside className="lempi-pool">

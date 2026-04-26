@@ -1,4 +1,5 @@
 .lempi-page {
+	--lempi-banner-height: 0px;
 	width: 100%;
 	height: 100dvh;
 	overflow: hidden;
@@ -6,9 +7,95 @@
 	color: #f7f7ef;
 }
 
+.lempi-page.is-reconnecting {
+	--lempi-banner-height: 34px;
+}
+
+.lempi-reconnect {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 9999;
+	height: var(--lempi-banner-height);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #c63c39;
+	color: #fff;
+	font-size: 0.78rem;
+	font-weight: 800;
+}
+
+.lempi-header {
+	position: fixed;
+	top: var(--lempi-banner-height);
+	left: 0;
+	right: 0;
+	z-index: var(--z-header);
+	height: var(--header-height);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 var(--space-lg);
+	background: rgba(7, 8, 8, 0.94);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+}
+
+.lempi-header__brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+}
+
+.lempi-header__brand strong {
+	color: #f6d66d;
+	font-size: clamp(1.05rem, 2.4vw, 1.45rem);
+	font-weight: 950;
+	text-transform: uppercase;
+}
+
+.lempi-header__brand span {
+	width: 8px;
+	height: 8px;
+	flex: 0 0 auto;
+	border-radius: 999px;
+	background: #d64b42;
+	box-shadow: 0 0 10px rgba(214, 75, 66, 0.8);
+}
+
+.lempi-header__brand span.connected {
+	background: #1fd36a;
+	box-shadow: 0 0 10px rgba(31, 211, 106, 0.8);
+}
+
+.lempi-header__balance {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	line-height: 1.1;
+}
+
+.lempi-header__balance span {
+	color: #8d9294;
+	font-size: 0.68rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.lempi-header__balance strong {
+	font-family: var(--font-numbers);
+	font-size: 1rem;
+	color: #f3f5f1;
+}
+
 .lempi-layout {
-	height: calc(100dvh - var(--header-height));
-	margin-top: var(--header-height);
+	height: calc(100dvh - var(--header-height) - var(--lempi-banner-height));
+	margin-top: calc(var(--header-height) + var(--lempi-banner-height));
 	display: grid;
 	grid-template-columns: 300px minmax(0, 1fr) 360px;
 	min-height: 0;
@@ -384,6 +471,10 @@
 }
 
 @media (max-width: 560px) {
+	.lempi-header {
+		padding: 0 var(--space-md);
+	}
+
 	.lempi-layout {
 		grid-template-rows: minmax(260px, 38vh) auto minmax(180px, 1fr);
 	}

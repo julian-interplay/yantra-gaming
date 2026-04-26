@@ -10,10 +10,6 @@ import "./LempiShell.css";
 export const LempiShell: React.FC = () => {
 	const { placeBet, cashOut } = useLempiSocket();
 	const isConnected = useLempiStore((s) => s.isConnected);
-	const roundState = useLempiStore((s) => s.roundState);
-	const timeRemaining = useLempiStore((s) => s.timeRemaining);
-	const multiplier = useLempiStore((s) => s.multiplier);
-	const crashMultiplier = useLempiStore((s) => s.crashMultiplier);
 	const balanceMicro = useLempiStore((s) => s.balanceMicro);
 	const toasts = useLempiStore((s) => s.toasts);
 	const poolPlayers = useLempiStore((s) => s.poolPlayers);
@@ -55,7 +51,7 @@ export const LempiShell: React.FC = () => {
 			<main className="lempi-layout">
 				<aside className="lempi-pool">
 					<div className="lempi-pool__tabs">
-						<span className="active">En vivo</span>
+						<span className="active">Mesa</span>
 						<span>Cartera</span>
 						<span>Senales IA</span>
 					</div>
@@ -100,27 +96,13 @@ export const LempiShell: React.FC = () => {
 
 				<section className="lempi-stage">
 					<div className="lempi-stage__top">
-						<span>{isConnected ? "EN VIVO" : "CONECTANDO"}</span>
+						<span
+							className={`lempi-live-dot ${isConnected ? "connected" : ""}`}
+							aria-hidden="true"
+						/>
 						<strong>{formatHnl(balanceMicro, true)}</strong>
 					</div>
 					<LempiCanvas />
-					<div className="lempi-hud">
-						{roundState === "BETTING_OPEN" && (
-							<>
-								<span>PREPARATE</span>
-								<strong>{timeRemaining}s</strong>
-							</>
-						)}
-						{roundState === "ROLLING" && (
-							<strong>{multiplier.toFixed(2)}x</strong>
-						)}
-						{roundState === "RESULT" && (
-							<>
-								<span>EXPLOTO EN</span>
-								<strong>{(crashMultiplier ?? multiplier).toFixed(2)}x</strong>
-							</>
-						)}
-					</div>
 					<div className="lempi-toasts">
 						{toasts.map((toast) => (
 							<div className="lempi-toast" key={toast.id}>

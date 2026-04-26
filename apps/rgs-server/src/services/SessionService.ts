@@ -89,6 +89,8 @@ export class SessionService {
       lang: session.lang,
       operatorId: session.operatorId,
       currency: session.currency,
+      gameCode: session.gameCode,
+      jurisdiction: session.jurisdiction,
     });
     const launchUrl = `${config.gameClientBaseUrl}/?${params.toString()}`;
 

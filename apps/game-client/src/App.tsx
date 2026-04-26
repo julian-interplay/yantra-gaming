@@ -1,30 +1,34 @@
-import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { parseLaunchParams, type LaunchParams } from './bootstrap/parseLaunchParams';
-import { useSocket } from './hooks/useSocket';
+import type React from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  installParentMessaging,
-  sendReady,
-  sendSessionEnded,
-} from './iframe/parentMessaging';
-import { useSessionStore } from './session/sessionStore';
-import { useGameStore } from './store/gameStore';
-import { BetControls } from './ui/BetControls';
-import { BetRejectToast } from './ui/BetRejectToast';
-import { CanvasErrorBoundary } from './ui/CanvasErrorBoundary';
-import { CanvasToolbar } from './ui/CanvasToolbar';
-import { ErrorScreen } from './ui/ErrorScreen';
-import { FairnessDrawer } from './ui/FairnessDrawer';
-import { GameCanvas } from './ui/GameCanvas';
-import { GameSplash } from './ui/GameSplash';
-import { Header } from './ui/Header';
-import { InfoSheet } from './ui/InfoSheet';
-import { LeftPanel } from './ui/LeftPanel';
-import { LossToast } from './ui/LossToast';
-import { OfflineBanner } from './ui/OfflineBanner';
-import { SessionExpiryBanner } from './ui/SessionExpiryBanner';
-import { WinToast } from './ui/WinToast';
+	type LaunchParams,
+	parseLaunchParams,
+} from "./bootstrap/parseLaunchParams";
+import { useSocket } from "./hooks/useSocket";
+import {
+	installParentMessaging,
+	sendReady,
+	sendSessionEnded,
+} from "./iframe/parentMessaging";
+import { LempiShell } from "./lempi/LempiShell";
+import { useSessionStore } from "./session/sessionStore";
+import { useGameStore } from "./store/gameStore";
+import { BetControls } from "./ui/BetControls";
+import { BetRejectToast } from "./ui/BetRejectToast";
+import { CanvasErrorBoundary } from "./ui/CanvasErrorBoundary";
+import { CanvasToolbar } from "./ui/CanvasToolbar";
+import { ErrorScreen } from "./ui/ErrorScreen";
+import { FairnessDrawer } from "./ui/FairnessDrawer";
+import { GameCanvas } from "./ui/GameCanvas";
+import { GameSplash } from "./ui/GameSplash";
+import { Header } from "./ui/Header";
+import { InfoSheet } from "./ui/InfoSheet";
+import { LeftPanel } from "./ui/LeftPanel";
+import { LossToast } from "./ui/LossToast";
+import { OfflineBanner } from "./ui/OfflineBanner";
+import { SessionExpiryBanner } from "./ui/SessionExpiryBanner";
+import { WinToast } from "./ui/WinToast";
 
 /**
  * Full page layout — header on top, LeftPanel | canvas-area | BetControls in
@@ -32,86 +36,95 @@ import { WinToast } from './ui/WinToast';
  * to a stacked column under 1024px (see global.css + each panel's own CSS).
  */
 const GameShell: React.FC = () => {
-  const { t } = useTranslation();
-  const { placeBet } = useSocket();
-  const isPaused = useGameStore((s) => s.isPaused);
-  const isConnected = useGameStore((s) => s.isConnected);
+	const { t } = useTranslation();
+	const { placeBet } = useSocket();
+	const isPaused = useGameStore((s) => s.isPaused);
+	const isConnected = useGameStore((s) => s.isConnected);
 
-  const [fairnessOpen, setFairnessOpen] = useState(false);
-  const [infoSheetOpen, setInfoSheetOpen] = useState(false);
-  const [splashHidden, setSplashHidden] = useState(false);
-  const [splashMounted, setSplashMounted] = useState(true);
-  const [showDisconnected, setShowDisconnected] = useState(false);
+	const [fairnessOpen, setFairnessOpen] = useState(false);
+	const [infoSheetOpen, setInfoSheetOpen] = useState(false);
+	const [splashHidden, setSplashHidden] = useState(false);
+	const [splashMounted, setSplashMounted] = useState(true);
+	const [showDisconnected, setShowDisconnected] = useState(false);
 
-  // Hide the splash after the first socket connection — the scene has loaded
-  // by then and we have real data to render.
-  useEffect(() => {
-    if (!isConnected) return;
-    const hideTimer = setTimeout(() => setSplashHidden(true), 400);
-    return () => clearTimeout(hideTimer);
-  }, [isConnected]);
+	// Hide the splash after the first socket connection — the scene has loaded
+	// by then and we have real data to render.
+	useEffect(() => {
+		if (!isConnected) return;
+		const hideTimer = setTimeout(() => setSplashHidden(true), 400);
+		return () => clearTimeout(hideTimer);
+	}, [isConnected]);
 
-  // Unmount the splash after its fade-out transition completes (matches 0.45s).
-  useEffect(() => {
-    if (!splashHidden) return;
-    const timer = setTimeout(() => setSplashMounted(false), 500);
-    return () => clearTimeout(timer);
-  }, [splashHidden]);
+	// Unmount the splash after its fade-out transition completes (matches 0.45s).
+	useEffect(() => {
+		if (!splashHidden) return;
+		const timer = setTimeout(() => setSplashMounted(false), 500);
+		return () => clearTimeout(timer);
+	}, [splashHidden]);
 
-  // Show "reconnecting" overlay only after 5s of disconnect — brief blips
-  // shouldn't flash the overlay.
-  useEffect(() => {
-    if (isConnected) {
-      setShowDisconnected(false);
-      return;
-    }
-    const timer = setTimeout(() => setShowDisconnected(true), 5000);
-    return () => clearTimeout(timer);
-  }, [isConnected]);
+	// Show "reconnecting" overlay only after 5s of disconnect — brief blips
+	// shouldn't flash the overlay.
+	useEffect(() => {
+		if (isConnected) {
+			setShowDisconnected(false);
+			return;
+		}
+		const timer = setTimeout(() => setShowDisconnected(true), 5000);
+		return () => clearTimeout(timer);
+	}, [isConnected]);
 
-  return (
-    <div className="game-page">
-      <OfflineBanner />
-      <SessionExpiryBanner />
-      <Header onInfoClick={() => setInfoSheetOpen(true)} />
+	return (
+		<div className="game-page">
+			<OfflineBanner />
+			<SessionExpiryBanner />
+			<Header onInfoClick={() => setInfoSheetOpen(true)} />
 
-      <div className="game-page__body">
-        <LeftPanel />
+			<div className="game-page__body">
+				<LeftPanel />
 
-        <div className="game-page__canvas-area">
-          <CanvasErrorBoundary>
-            <GameCanvas />
-          </CanvasErrorBoundary>
+				<div className="game-page__canvas-area">
+					<CanvasErrorBoundary>
+						<GameCanvas />
+					</CanvasErrorBoundary>
 
-          {splashMounted && <GameSplash hidden={splashHidden} />}
+					{splashMounted && <GameSplash hidden={splashHidden} />}
 
-          <CanvasToolbar onOpenFairness={() => setFairnessOpen(true)} />
+					<CanvasToolbar onOpenFairness={() => setFairnessOpen(true)} />
 
-          <div className={`game-page__overlay pause ${isPaused ? 'open' : ''}`}>
-            <div className="game-page__overlay-content">
-              <span className="game-page__overlay-icon">||</span>
-              <span className="game-page__overlay-text">{t('game.paused')}</span>
-            </div>
-          </div>
+					<div className={`game-page__overlay pause ${isPaused ? "open" : ""}`}>
+						<div className="game-page__overlay-content">
+							<span className="game-page__overlay-icon">||</span>
+							<span className="game-page__overlay-text">
+								{t("game.paused")}
+							</span>
+						</div>
+					</div>
 
-          <div className={`game-page__overlay disconnected ${showDisconnected ? 'open' : ''}`}>
-            <div className="game-page__overlay-content">
-              <span className="game-page__overlay-spinner" />
-              <span className="game-page__overlay-text">{t('game.disconnected')}</span>
-            </div>
-          </div>
-        </div>
+					<div
+						className={`game-page__overlay disconnected ${showDisconnected ? "open" : ""}`}
+					>
+						<div className="game-page__overlay-content">
+							<span className="game-page__overlay-spinner" />
+							<span className="game-page__overlay-text">
+								{t("game.disconnected")}
+							</span>
+						</div>
+					</div>
+				</div>
 
-        <BetControls placeBet={placeBet} />
-      </div>
+				<BetControls placeBet={placeBet} />
+			</div>
 
-      <WinToast />
-      <LossToast />
-      <BetRejectToast />
-      <FairnessDrawer open={fairnessOpen} onClose={() => setFairnessOpen(false)} />
-      <InfoSheet open={infoSheetOpen} onClose={() => setInfoSheetOpen(false)} />
-    </div>
-  );
+			<WinToast />
+			<LossToast />
+			<BetRejectToast />
+			<FairnessDrawer
+				open={fairnessOpen}
+				onClose={() => setFairnessOpen(false)}
+			/>
+			<InfoSheet open={infoSheetOpen} onClose={() => setInfoSheetOpen(false)} />
+		</div>
+	);
 };
 
 /**
@@ -119,48 +132,51 @@ const GameShell: React.FC = () => {
  * and chooses between the game shell and the error screen.
  */
 export const App: React.FC = () => {
-  const { i18n } = useTranslation();
-  const [params] = useState<LaunchParams | null>(() => parseLaunchParams());
-  const terminated = useSessionStore((s) => s.terminated);
-  const terminationReason = useSessionStore((s) => s.terminationReason);
-  const initialise = useSessionStore((s) => s.initialise);
-  const refreshToken = useSessionStore((s) => s.refreshToken);
-  const terminate = useSessionStore((s) => s.terminate);
+	const { i18n } = useTranslation();
+	const [params] = useState<LaunchParams | null>(() => parseLaunchParams());
+	const terminated = useSessionStore((s) => s.terminated);
+	const terminationReason = useSessionStore((s) => s.terminationReason);
+	const initialise = useSessionStore((s) => s.initialise);
+	const refreshToken = useSessionStore((s) => s.refreshToken);
+	const terminate = useSessionStore((s) => s.terminate);
 
-  useEffect(() => {
-    if (!params) return;
-    initialise(params);
-    if (params.lang && params.lang !== i18n.language) {
-      i18n.changeLanguage(params.lang).catch(() => {});
-    }
-  }, [params, initialise, i18n]);
+	useEffect(() => {
+		if (!params) return;
+		initialise(params);
+		if (params.lang && params.lang !== i18n.language) {
+			i18n.changeLanguage(params.lang).catch(() => {});
+		}
+	}, [params, initialise, i18n]);
 
-  useEffect(() => {
-    if (!params) return;
-    sendReady();
-    const detach = installParentMessaging({
-      onTerminate: (reason) => {
-        terminate(reason);
-        sendSessionEnded(reason);
-      },
-      onRefreshToken: (token) => refreshToken(token),
-    });
-    return detach;
-  }, [params, terminate, refreshToken]);
+	useEffect(() => {
+		if (!params) return;
+		sendReady();
+		const detach = installParentMessaging({
+			onTerminate: (reason) => {
+				terminate(reason);
+				sendSessionEnded(reason);
+			},
+			onRefreshToken: (token) => refreshToken(token),
+		});
+		return detach;
+	}, [params, terminate, refreshToken]);
 
-  const errorScreen = useMemo(() => {
-    if (!params) return <ErrorScreen />;
-    if (terminated) {
-      return (
-        <ErrorScreen
-          title="Session ended"
-          message={terminationReason ?? 'Return to your casino to start a new session.'}
-        />
-      );
-    }
-    return null;
-  }, [params, terminated, terminationReason]);
+	const errorScreen = useMemo(() => {
+		if (!params) return <ErrorScreen />;
+		if (terminated) {
+			return (
+				<ErrorScreen
+					title="Session ended"
+					message={
+						terminationReason ?? "Return to your casino to start a new session."
+					}
+				/>
+			);
+		}
+		return null;
+	}, [params, terminated, terminationReason]);
 
-  if (errorScreen) return errorScreen;
-  return <GameShell />;
+	if (errorScreen) return errorScreen;
+	if (params?.gameCode === "lempi-crash") return <LempiShell />;
+	return <GameShell />;
 };

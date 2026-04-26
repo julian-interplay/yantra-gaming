@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 1,
   "workspaces": {
     "": {
       "name": "ketapola-b2b",
@@ -102,6 +101,7 @@
         "@simplewebauthn/server": "^11.0.0",
         "@yantra-games/crash-minimal": "workspace:*",
         "@yantra-games/ketapola-dice": "workspace:*",
+        "@yantra-games/lempi-crash": "workspace:*",
         "@yantra/game-contract": "workspace:*",
         "@yantra/jurisdiction-rules": "workspace:*",
         "@yantra/rng-core": "workspace:*",
@@ -141,6 +141,15 @@
     },
     "games/ketapola-dice": {
       "name": "@yantra-games/ketapola-dice",
+      "version": "0.1.0",
+      "dependencies": {
+        "@yantra/game-contract": "workspace:*",
+        "@yantra/rng-core": "workspace:*",
+        "zod": "^3.23.8",
+      },
+    },
+    "games/lempi-crash": {
+      "name": "@yantra-games/lempi-crash",
       "version": "0.1.0",
       "dependencies": {
         "@yantra/game-contract": "workspace:*",
@@ -481,6 +490,8 @@
     "@yantra-games/crash-minimal": ["@yantra-games/crash-minimal@workspace:games/crash-minimal"],
 
     "@yantra-games/ketapola-dice": ["@yantra-games/ketapola-dice@workspace:games/ketapola-dice"],
+
+    "@yantra-games/lempi-crash": ["@yantra-games/lempi-crash@workspace:games/lempi-crash"],
 
     "@yantra/game-client": ["@yantra/game-client@workspace:apps/game-client"],
 

@@ -24,10 +24,10 @@ export const config = {
   rgsBaseUrl: str('RGS_BASE_URL', 'http://localhost:4500'),
   gameClientBaseUrl: str('GAME_CLIENT_BASE_URL', 'http://localhost:3100'),
   signatureWindowSeconds: int('SIGNATURE_WINDOW_SECONDS', 30),
-  gameCode: str('MOCK_OPERATOR_GAME_CODE', 'ketapola-dice'),
-  defaultCurrency: 'LKR',
+  gameCode: str('MOCK_OPERATOR_GAME_CODE', 'lempi-crash'),
+  defaultCurrency: str('MOCK_OPERATOR_CURRENCY', 'HNL'),
   defaultLang: 'en',
-  defaultJurisdiction: 'LK',
+  defaultJurisdiction: str('MOCK_OPERATOR_JURISDICTION', 'HN'),
 } as const;
 
 export type MockOperatorConfig = typeof config;

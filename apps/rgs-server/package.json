@@ -13,6 +13,7 @@
   "dependencies": {
     "@yantra-games/crash-minimal": "workspace:*",
     "@yantra-games/ketapola-dice": "workspace:*",
+    "@yantra-games/lempi-crash": "workspace:*",
     "@yantra/game-contract": "workspace:*",
     "@yantra/jurisdiction-rules": "workspace:*",
     "@yantra/rng-core": "workspace:*",

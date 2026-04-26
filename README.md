@@ -46,6 +46,7 @@ Yantra is shaped like the commercial providers this category runs on (Stake Engi
 | :--- | :--- | :--- |
 | **Ketapola Dice** | Sri Lankan dice, LOW/HIGH weighted outcome, 2× payout | First shipped plugin |
 | **Crash Minimal** | Provably-fair crash, HMAC to `1/(1 − u)` multiplier | Reference plugin proving a different outcome shape |
+| **Lempi Crash** | HNL-only live crash with two bet slots and manual/auto cashout | In development |
 
 Adding a game is a workspace directory plus one line in the registry; the engine, the wallet, the audit ledger, and the compliance surface do not move.
 

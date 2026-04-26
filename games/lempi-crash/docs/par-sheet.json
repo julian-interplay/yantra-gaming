@@ -1,0 +1,26 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"game": {
+		"code": "lempi-crash",
+		"displayName": "Lempi Crash",
+		"category": "live-crash",
+		"currency": "HNL"
+	},
+	"defaultConfig": {
+		"houseEdge": 0.01,
+		"maxMultiplier": 1000,
+		"multiplierGrowthRate": 0.00011,
+		"minFlightMs": 700,
+		"maxFlightMs": 120000
+	},
+	"rtp": {
+		"formula": "RTP(K) = K * ((1 - houseEdge) / K) = 1 - houseEdge",
+		"theoretical": 0.99
+	},
+	"stake": {
+		"currency": "HNL",
+		"minBetMicro": "1000000",
+		"seededMaxBetMicro": "10000000000"
+	},
+	"testVectorsSource": "games/lempi-crash/fixtures/rng-test-vectors.json"
+}

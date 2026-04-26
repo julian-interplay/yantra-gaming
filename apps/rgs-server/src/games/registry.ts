@@ -1,6 +1,7 @@
 import type { GamePlugin } from '@yantra/game-contract';
 import crashMinimal from '@yantra-games/crash-minimal';
 import ketapolaDice from '@yantra-games/ketapola-dice';
+import lempiCrash from '@yantra-games/lempi-crash';
 
 /**
  * Static plugin registry. Each game module exports a default GamePlugin; we
@@ -12,6 +13,7 @@ import ketapolaDice from '@yantra-games/ketapola-dice';
 const plugins: Record<string, GamePlugin> = {
   [ketapolaDice.gameCode]: ketapolaDice,
   [crashMinimal.gameCode]: crashMinimal,
+  [lempiCrash.gameCode]: lempiCrash,
 };
 
 export function getPlugin(gameCode: string): GamePlugin | null {

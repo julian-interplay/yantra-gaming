@@ -407,6 +407,11 @@ model Bet {
   status                   BetStatus @default(PENDING)
   wonAmountMicro           BigInt?   @map("won_amount_micro")
   won                      Boolean?
+  cashoutMultiplier        Float?    @map("cashout_multiplier")
+  cashoutElapsedMs         Int?      @map("cashout_elapsed_ms")
+  cashoutMode              String?   @map("cashout_mode") @db.VarChar(16)
+  cashoutAt                DateTime? @map("cashout_at")
+  cashoutPayoutMicro       BigInt?   @map("cashout_payout_micro")
 
   // Wallet call linkage (1-to-1 with operator-side transactions)
   betTransactionUuid       String    @unique @map("bet_transaction_uuid") @db.Uuid

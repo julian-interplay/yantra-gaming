@@ -1,5 +1,6 @@
 import crashMinimal from '@yantra-games/crash-minimal';
 import ketapolaDice from '@yantra-games/ketapola-dice';
+import lempiCrash from '@yantra-games/lempi-crash';
 import bcrypt from 'bcryptjs';
 import { prisma } from './db.js';
 import { logger } from './logger.js';
@@ -25,7 +26,8 @@ async function main(): Promise<void> {
       status: 'ACTIVE',
       testMode: true,
       jurisdiction: 'LK',
-      defaultCurrency: 'LKR',
+      defaultCurrency: 'HNL',
+      allowedCurrencies: ['HNL', 'LKR'],
       walletCallbackUrl: MOCK_WALLET_CALLBACK_URL,
       ipAllowList: [],
       notes: 'Seeded for local development. Safe to destroy.',
@@ -35,6 +37,9 @@ async function main(): Promise<void> {
       name: 'Mock Dev Operator',
       status: 'ACTIVE',
       testMode: true,
+      jurisdiction: 'HN',
+      defaultCurrency: 'HNL',
+      allowedCurrencies: ['HNL', 'LKR'],
       walletCallbackUrl: MOCK_WALLET_CALLBACK_URL,
     },
   });
@@ -130,6 +135,52 @@ async function main(): Promise<void> {
     },
   });
   logger.info('seed: game config', { gameCode: crashMinimal.gameCode, currency: 'LKR' });
+
+  await prisma.operatorGameConfig.upsert({
+    where: {
+      operatorId_gameCode_currency: {
+        operatorId: operator.id,
+        gameCode: lempiCrash.gameCode,
+        currency: 'HNL',
+      },
+    },
+    create: {
+      operatorId: operator.id,
+      gameCode: lempiCrash.gameCode,
+      currency: 'HNL',
+      enabled: true,
+      configJson: {
+        houseEdge: 0.01,
+        maxMultiplier: 1000,
+        multiplierGrowthRate: 0.00011,
+        minFlightMs: 700,
+        maxFlightMs: 120000,
+        botCashoutsEnabled: true,
+      },
+      configVersion: 'v1',
+      minBetMicro: 1_000_000n,
+      maxBetMicro: 10_000_000_000n,
+      commissionMicro: 0n,
+      bettingWindowMs: 8_000,
+      rollingWindowMs: 4_000,
+      cooldownMs: 3_000,
+    },
+    update: {
+      enabled: true,
+      configJson: {
+        houseEdge: 0.01,
+        maxMultiplier: 1000,
+        multiplierGrowthRate: 0.00011,
+        minFlightMs: 700,
+        maxFlightMs: 120000,
+        botCashoutsEnabled: true,
+      },
+      minBetMicro: 1_000_000n,
+      maxBetMicro: 10_000_000_000n,
+      bettingWindowMs: 8_000,
+    },
+  });
+  logger.info('seed: game config', { gameCode: lempiCrash.gameCode, currency: 'HNL' });
 
   const adminEmail = 'admin@mock-dev.local';
   const existingAdmin = await prisma.operatorUser.findUnique({ where: { email: adminEmail } });

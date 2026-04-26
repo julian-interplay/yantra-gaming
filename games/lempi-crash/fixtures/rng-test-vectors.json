@@ -1,0 +1,54 @@
+[
+	{
+		"serverSeed": "0000000000000000000000000000000000000000000000000000000000000000",
+		"clientSeed": "lempi-a",
+		"nonce": 0,
+		"config": {
+			"houseEdge": 0.01,
+			"maxMultiplier": 1000
+		},
+		"outcome": {
+			"crashMultiplier": 1.73,
+			"u": 0.429196131705311
+		}
+	},
+	{
+		"serverSeed": "1111111111111111111111111111111111111111111111111111111111111111",
+		"clientSeed": "lempi-a",
+		"nonce": 1,
+		"config": {
+			"houseEdge": 0.01,
+			"maxMultiplier": 1000
+		},
+		"outcome": {
+			"crashMultiplier": 1.33,
+			"u": 0.2573002268926785
+		}
+	},
+	{
+		"serverSeed": "2222222222222222222222222222222222222222222222222222222222222222",
+		"clientSeed": "lempi-b",
+		"nonce": 17,
+		"config": {
+			"houseEdge": 0.01,
+			"maxMultiplier": 1000
+		},
+		"outcome": {
+			"crashMultiplier": 2.67,
+			"u": 0.6302711525973779
+		}
+	},
+	{
+		"serverSeed": "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+		"clientSeed": "player-seed",
+		"nonce": 42,
+		"config": {
+			"houseEdge": 0.01,
+			"maxMultiplier": 1000
+		},
+		"outcome": {
+			"crashMultiplier": 2.61,
+			"u": 0.6217241948785344
+		}
+	}
+]

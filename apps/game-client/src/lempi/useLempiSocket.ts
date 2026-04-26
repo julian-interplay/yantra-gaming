@@ -38,6 +38,27 @@ function phaseToState(phase: string | undefined) {
 	}
 }
 
+function spanishReason(reason: string | undefined, fallback: string): string {
+	switch (reason) {
+		case "too_late":
+			return "Demasiado tarde";
+		case "not_found":
+			return "Apuesta no encontrada";
+		case "already_cashed_out":
+			return "Retiro ya realizado";
+		case "not_cashoutable":
+			return "Retiro no disponible";
+		case "invalid_selection":
+			return "Seleccion invalida";
+		case "betting_closed":
+			return "Apuestas cerradas";
+		case "insufficient_funds":
+			return "Saldo insuficiente";
+		default:
+			return fallback;
+	}
+}
+
 export function useLempiSocket(): {
 	placeBet: (
 		slotId: LempiSlotId,
@@ -82,7 +103,7 @@ export function useLempiSocket(): {
 					latest.setSlot(slotId, { status: "IDLE", betId: null });
 					window.dispatchEvent(
 						new CustomEvent("lempi:notice", {
-							detail: ack?.reason ?? "Bet rejected",
+							detail: spanishReason(ack?.reason, "Apuesta rechazada"),
 						}),
 					);
 				},
@@ -107,7 +128,7 @@ export function useLempiSocket(): {
 				if (ack?.ok) return;
 				window.dispatchEvent(
 					new CustomEvent("lempi:notice", {
-						detail: ack?.reason ?? "Cashout rejected",
+						detail: spanishReason(ack?.reason, "Retiro rechazado"),
 					}),
 				);
 			},
@@ -322,7 +343,7 @@ export function useLempiSocket(): {
 
 		socket.on("bet_rejected", () => {
 			window.dispatchEvent(
-				new CustomEvent("lempi:notice", { detail: "Bet rejected" }),
+				new CustomEvent("lempi:notice", { detail: "Apuesta rechazada" }),
 			);
 		});
 

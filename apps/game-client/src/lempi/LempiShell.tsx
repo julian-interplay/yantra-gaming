@@ -25,7 +25,7 @@ export const LempiShell: React.FC = () => {
 	useEffect(() => {
 		const handler = (event: Event) => {
 			setNotice(
-				String((event as CustomEvent<string>).detail ?? "Action rejected"),
+				String((event as CustomEvent<string>).detail ?? "Accion rechazada"),
 			);
 			window.setTimeout(() => setNotice(null), 2200);
 		};
@@ -37,7 +37,7 @@ export const LempiShell: React.FC = () => {
 		<div className={`lempi-page ${isConnected ? "" : "is-reconnecting"}`}>
 			{!isConnected && (
 				<div className="lempi-reconnect" role="status" aria-live="polite">
-					Reconnecting to game server...
+					Reconectando al servidor...
 				</div>
 			)}
 			<SessionExpiryBanner />
@@ -47,7 +47,7 @@ export const LempiShell: React.FC = () => {
 					<span className={isConnected ? "connected" : ""} />
 				</div>
 				<div className="lempi-header__balance">
-					<span>Balance</span>
+					<span>Saldo</span>
 					<strong>{formatHnl(balanceMicro, true)}</strong>
 				</div>
 			</header>
@@ -55,28 +55,28 @@ export const LempiShell: React.FC = () => {
 			<main className="lempi-layout">
 				<aside className="lempi-pool">
 					<div className="lempi-pool__tabs">
-						<span className="active">Live</span>
-						<span>Portfolio</span>
-						<span>AI Signals</span>
+						<span className="active">En vivo</span>
+						<span>Cartera</span>
+						<span>Senales IA</span>
 					</div>
 					<div className="lempi-pool__summary">
 						<div>
 							<strong>
 								{cashedOutCount}/{acceptedCount}
 							</strong>
-							<span> Pool</span>
+							<span> Pozo</span>
 						</div>
 						<div>
 							<strong>{formatHnl(totalWinMicro)}</strong>
-							<span>Total win HNL</span>
+							<span>Ganancia total HNL</span>
 						</div>
 					</div>
 					<div className="lempi-pool__table">
 						<div className="lempi-pool__head">
-							<span>Player</span>
-							<span>Stake</span>
+							<span>Jugador</span>
+							<span>Apuesta</span>
 							<span>X</span>
-							<span>Win</span>
+							<span>Gana</span>
 						</div>
 						{poolPlayers.map((player) => (
 							<div
@@ -100,14 +100,14 @@ export const LempiShell: React.FC = () => {
 
 				<section className="lempi-stage">
 					<div className="lempi-stage__top">
-						<span>{isConnected ? "LIVE" : "CONNECTING"}</span>
+						<span>{isConnected ? "EN VIVO" : "CONECTANDO"}</span>
 						<strong>{formatHnl(balanceMicro, true)}</strong>
 					</div>
 					<LempiCanvas />
 					<div className="lempi-hud">
 						{roundState === "BETTING_OPEN" && (
 							<>
-								<span>GET READY</span>
+								<span>PREPARATE</span>
 								<strong>{timeRemaining}s</strong>
 							</>
 						)}
@@ -116,7 +116,7 @@ export const LempiShell: React.FC = () => {
 						)}
 						{roundState === "RESULT" && (
 							<>
-								<span>CRASHED AT</span>
+								<span>EXPLOTO EN</span>
 								<strong>{(crashMultiplier ?? multiplier).toFixed(2)}x</strong>
 							</>
 						)}

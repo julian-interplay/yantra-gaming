@@ -303,16 +303,16 @@
 .lempi-controls {
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
-	padding: 16px;
+	gap: 10px;
+	padding: 12px;
 	border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .lempi-bet {
 	display: grid;
-	grid-template-columns: 1fr 1.1fr;
-	gap: 10px 12px;
-	padding: 14px;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px 10px;
+	padding: 10px;
 	border-radius: 8px;
 	background: #191b1a;
 	border: 1px solid rgba(255, 255, 255, 0.07);
@@ -330,6 +330,7 @@
 	justify-content: space-between;
 	align-items: center;
 	color: #d9dcda;
+	font-size: 0.9rem;
 	font-weight: 800;
 }
 
@@ -338,13 +339,13 @@
 	align-items: center;
 	gap: 6px;
 	color: #9aa0a0;
-	font-size: 0.86rem;
+	font-size: 0.78rem;
 }
 
 .lempi-bet__amount {
 	display: grid;
-	grid-template-columns: 36px 1fr 36px;
-	gap: 8px;
+	grid-template-columns: 32px 1fr 32px;
+	gap: 6px;
 	align-items: center;
 }
 
@@ -358,36 +359,37 @@
 
 .lempi-bet input {
 	min-width: 0;
-	height: 38px;
-	padding: 0 10px;
+	height: 32px;
+	padding: 0 8px;
 	text-align: center;
-	font: 800 1rem var(--font-numbers);
+	font: 800 0.9rem var(--font-numbers);
 }
 
 .lempi-bet__amount button {
-	height: 38px;
-	font-size: 1.2rem;
+	height: 32px;
+	font-size: 1rem;
 	cursor: pointer;
 }
 
 .lempi-bet__chips {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
-	gap: 6px;
+	gap: 5px;
 }
 
 .lempi-bet__chips button {
-	height: 34px;
+	height: 29px;
+	font-size: 0.82rem;
 	cursor: pointer;
 }
 
 .lempi-bet__auto {
 	display: grid;
-	grid-template-columns: 1fr 68px 18px;
-	gap: 6px;
+	grid-template-columns: 1fr 58px 14px;
+	gap: 5px;
 	align-items: center;
 	color: #9aa0a0;
-	font-size: 0.8rem;
+	font-size: 0.72rem;
 }
 
 .lempi-bet__action {
@@ -397,7 +399,7 @@
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	min-height: 128px;
+	min-height: 104px;
 	border: 0;
 	border-radius: 8px;
 	background: #28ad4d;
@@ -412,12 +414,13 @@
 }
 
 .lempi-bet__action strong {
-	font-size: clamp(1.1rem, 2.5vw, 1.75rem);
+	font-size: clamp(0.92rem, 1.7vw, 1.35rem);
 	line-height: 1;
 }
 
 .lempi-bet__action span {
-	margin-top: 5px;
+	margin-top: 4px;
+	font-size: 0.9rem;
 	font-weight: 900;
 }
 
@@ -449,18 +452,20 @@
 @media (max-width: 1100px) {
 	.lempi-layout {
 		grid-template-columns: 1fr;
-		grid-template-rows: minmax(300px, 46vh) auto minmax(180px, 1fr);
+		grid-template-rows: minmax(210px, 30vh) auto minmax(130px, 1fr);
 		overflow: auto;
 	}
 
 	.lempi-stage {
 		grid-row: 1;
-		min-height: 300px;
+		min-height: 210px;
 	}
 
 	.lempi-controls {
 		grid-row: 2;
 		flex-direction: column;
+		gap: 8px;
+		padding: 10px 12px;
 	}
 
 	.lempi-pool {
@@ -476,9 +481,24 @@
 	}
 
 	.lempi-layout {
-		grid-template-rows: minmax(260px, 38vh) auto minmax(180px, 1fr);
+		grid-template-rows: minmax(190px, 26vh) auto minmax(120px, 1fr);
 	}
 
+	.lempi-bet {
+		gap: 7px;
+		padding: 9px;
+	}
+
+	.lempi-bet__action {
+		min-height: 92px;
+	}
+
+	.lempi-bet__action strong {
+		font-size: 1rem;
+	}
+}
+
+@media (max-width: 380px) {
 	.lempi-bet {
 		grid-template-columns: 1fr;
 	}
@@ -486,6 +506,6 @@
 	.lempi-bet__action {
 		grid-column: 1;
 		grid-row: auto;
-		min-height: 88px;
+		min-height: 54px;
 	}
 }

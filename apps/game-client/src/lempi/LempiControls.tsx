@@ -55,19 +55,19 @@ const LempiBetPanel: React.FC<LempiControlsProps & { slotId: LempiSlotId }> = ({
 	const canCashOut = roundState === "ROLLING" && slot.status === "ACTIVE";
 	const label =
 		slot.status === "PENDING"
-			? "WAITING"
+			? "ESPERANDO"
 			: canCashOut
-				? `CASH OUT ${multiplier.toFixed(2)}x`
+				? `RETIRAR ${multiplier.toFixed(2)}x`
 				: slot.status === "CASHED_OUT"
-					? `WON ${slot.cashoutMultiplier?.toFixed(2)}x`
+					? `GANASTE ${slot.cashoutMultiplier?.toFixed(2)}x`
 					: slot.status === "LOST"
-						? "CRASHED"
-						: "LAUNCH";
+						? "PERDIDO"
+						: "LANZAR";
 
 	return (
 		<section className={`lempi-bet ${slot.status.toLowerCase()}`}>
 			<div className="lempi-bet__tabs">
-				<span>Stake</span>
+				<span>Apuesta</span>
 				<label>
 					<input
 						type="checkbox"
@@ -119,7 +119,7 @@ const LempiBetPanel: React.FC<LempiControlsProps & { slotId: LempiSlotId }> = ({
 
 			{autoEnabled && (
 				<div className="lempi-bet__auto">
-					<span>Auto cashout</span>
+					<span>Retiro auto</span>
 					<input
 						value={autoCashout}
 						onChange={(event) => setAutoCashout(event.target.value)}

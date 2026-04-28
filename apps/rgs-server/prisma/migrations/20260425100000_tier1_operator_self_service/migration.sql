@@ -30,7 +30,7 @@ ALTER TYPE "OperatorRole" ADD VALUE IF NOT EXISTS 'OPERATOR_SUPPORT';
 ALTER TABLE "operator_users"
   ADD COLUMN "mfa_totp_secret_cipher" BYTEA,
   ADD COLUMN "mfa_enrolled_at" TIMESTAMP(3),
-  ADD COLUMN "mfa_recovery_codes_hash" VARCHAR(128),
+  ADD COLUMN "mfa_recovery_codes_hash" TEXT,
   ADD COLUMN "disabled_at" TIMESTAMP(3),
   ADD COLUMN "disabled_by" VARCHAR(254);
 
@@ -60,7 +60,7 @@ CREATE INDEX "operator_user_invites_expires_at_idx"
 
 ALTER TABLE "operator_user_invites"
   ADD CONSTRAINT "operator_user_invites_operator_id_fkey"
-  FOREIGN KEY ("operator_id") REFERENCES "operators"("id") ON DELETE CASCADE;
+  FOREIGN KEY ("operator_id") REFERENCES "operators"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- ── WebhookSubscription ────────────────────────────────────
 CREATE TABLE "webhook_subscriptions" (
@@ -84,7 +84,7 @@ CREATE INDEX "webhook_subscriptions_operator_id_enabled_idx"
   ON "webhook_subscriptions" ("operator_id", "enabled");
 ALTER TABLE "webhook_subscriptions"
   ADD CONSTRAINT "webhook_subscriptions_operator_id_fkey"
-  FOREIGN KEY ("operator_id") REFERENCES "operators"("id") ON DELETE CASCADE;
+  FOREIGN KEY ("operator_id") REFERENCES "operators"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- ── WebhookDelivery ────────────────────────────────────────
 CREATE TABLE "webhook_deliveries" (
@@ -114,10 +114,10 @@ CREATE INDEX "webhook_deliveries_next_attempt_at_idx"
   ON "webhook_deliveries" ("next_attempt_at");
 ALTER TABLE "webhook_deliveries"
   ADD CONSTRAINT "webhook_deliveries_subscription_id_fkey"
-  FOREIGN KEY ("subscription_id") REFERENCES "webhook_subscriptions"("id") ON DELETE CASCADE;
+  FOREIGN KEY ("subscription_id") REFERENCES "webhook_subscriptions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "webhook_deliveries"
   ADD CONSTRAINT "webhook_deliveries_operator_id_fkey"
-  FOREIGN KEY ("operator_id") REFERENCES "operators"("id") ON DELETE CASCADE;
+  FOREIGN KEY ("operator_id") REFERENCES "operators"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- ── OperatorSigningKey ─────────────────────────────────────
 CREATE TABLE "operator_signing_keys" (
@@ -139,4 +139,4 @@ CREATE INDEX "operator_signing_keys_operator_id_status_idx"
   ON "operator_signing_keys" ("operator_id", "status");
 ALTER TABLE "operator_signing_keys"
   ADD CONSTRAINT "operator_signing_keys_operator_id_fkey"
-  FOREIGN KEY ("operator_id") REFERENCES "operators"("id") ON DELETE CASCADE;
+  FOREIGN KEY ("operator_id") REFERENCES "operators"("id") ON DELETE CASCADE ON UPDATE CASCADE;

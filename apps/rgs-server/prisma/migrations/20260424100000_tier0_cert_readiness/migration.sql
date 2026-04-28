@@ -40,7 +40,7 @@ CREATE TABLE "audit_anchors" (
   CONSTRAINT "audit_anchors_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "audit_anchors_period_stream_op_uidx"
+CREATE UNIQUE INDEX "audit_anchors_period_date_stream_name_operator_id_key"
   ON "audit_anchors" ("period_date", "stream_name", "operator_id");
 
 CREATE INDEX "audit_anchors_period_date_idx"

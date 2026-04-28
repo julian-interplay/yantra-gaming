@@ -427,6 +427,7 @@ model Bet {
 
   @@index([operatorId, playerRef])
   @@index([roundId])
+  @@index([roundId, cashoutAt])
   @@index([status])
   @@map("bets")
 }

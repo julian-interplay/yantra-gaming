@@ -29,7 +29,7 @@ CREATE INDEX "webauthn_credentials_user_id_idx"
   ON "webauthn_credentials" ("user_id");
 ALTER TABLE "webauthn_credentials"
   ADD CONSTRAINT "webauthn_credentials_user_id_fkey"
-  FOREIGN KEY ("user_id") REFERENCES "operator_users"("id") ON DELETE CASCADE;
+  FOREIGN KEY ("user_id") REFERENCES "operator_users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- ── webauthn_challenges (short-lived) ────────────────────────
 CREATE TABLE "webauthn_challenges" (
@@ -42,7 +42,7 @@ CREATE TABLE "webauthn_challenges" (
   "expires_at" TIMESTAMP(3) NOT NULL,
   CONSTRAINT "webauthn_challenges_pkey" PRIMARY KEY ("id")
 );
-CREATE INDEX "webauthn_challenges_user_kind_idx"
+CREATE INDEX "webauthn_challenges_user_id_kind_idx"
   ON "webauthn_challenges" ("user_id", "kind");
 CREATE INDEX "webauthn_challenges_email_kind_idx"
   ON "webauthn_challenges" ("email", "kind");
@@ -62,7 +62,7 @@ CREATE TABLE "cert_upload_tokens" (
 );
 CREATE UNIQUE INDEX "cert_upload_tokens_token_key"
   ON "cert_upload_tokens" ("token");
-CREATE INDEX "cert_upload_tokens_cert_idx"
+CREATE INDEX "cert_upload_tokens_certificate_id_idx"
   ON "cert_upload_tokens" ("certificate_id");
 CREATE INDEX "cert_upload_tokens_expires_at_idx"
   ON "cert_upload_tokens" ("expires_at");

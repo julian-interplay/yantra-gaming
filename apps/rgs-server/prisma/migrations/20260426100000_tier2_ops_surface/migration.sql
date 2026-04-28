@@ -18,11 +18,11 @@ CREATE TABLE "admin_audit_entries" (
   "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "admin_audit_entries_pkey" PRIMARY KEY ("id")
 );
-CREATE INDEX "admin_audit_entries_actor_idx"
+CREATE INDEX "admin_audit_entries_actor_user_id_created_at_idx"
   ON "admin_audit_entries" ("actor_user_id", "created_at");
-CREATE INDEX "admin_audit_entries_path_idx"
+CREATE INDEX "admin_audit_entries_path_created_at_idx"
   ON "admin_audit_entries" ("path", "created_at");
-CREATE INDEX "admin_audit_entries_target_idx"
+CREATE INDEX "admin_audit_entries_target_type_target_id_created_at_idx"
   ON "admin_audit_entries" ("target_type", "target_id", "created_at");
 
 CREATE TABLE "global_kill_switch" (

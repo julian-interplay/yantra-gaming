@@ -37,6 +37,8 @@ ALTER TABLE "bets" ADD COLUMN "selection" JSONB NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE "bets" ADD COLUMN "selection_type" VARCHAR(32) NOT NULL DEFAULT '';
 -- Remove the default once seed re-runs; kept as DEFAULT so dev-time Prisma
 -- migrate dev doesn't reject existing seed rows.
+ALTER TABLE "bets" ALTER COLUMN "selection" DROP DEFAULT;
+ALTER TABLE "bets" ALTER COLUMN "selection_type" DROP DEFAULT;
 
 -- operator_game_configs: add plugin math config. low_weight / high_weight
 -- remain for the duration of Phase 3; Phase 4 drops them after callers

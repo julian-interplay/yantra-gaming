@@ -98,7 +98,8 @@
 	height: calc(100dvh - var(--header-height) - var(--lempi-banner-height));
 	margin-top: calc(var(--header-height) + var(--lempi-banner-height));
 	display: grid;
-	grid-template-columns: 300px minmax(0, 1fr) 360px;
+	grid-template-columns: 300px minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr) auto;
 	min-height: 0;
 }
 
@@ -111,13 +112,15 @@
 }
 
 .lempi-pool {
+	grid-column: 1;
+	grid-row: 1 / span 2;
 	border-right: 1px solid rgba(255, 255, 255, 0.08);
 	padding: 14px;
 }
 
 .lempi-pool__tabs {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: repeat(2, 1fr);
 	gap: 4px;
 	padding: 5px;
 	border-radius: 8px;
@@ -125,10 +128,14 @@
 	color: #8b8f91;
 }
 
-.lempi-pool__tabs span {
+.lempi-pool__tabs button {
 	text-align: center;
 	padding: 8px 4px;
+	border: 0;
 	border-radius: 7px;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
 	font-weight: 700;
 }
 
@@ -197,7 +204,53 @@
 	color: #55cf62;
 }
 
+.lempi-history {
+	margin-top: 18px;
+}
+
+.lempi-history__head,
+.lempi-history__row {
+	display: grid;
+	grid-template-columns: 0.85fr 0.9fr 0.75fr 0.9fr;
+	gap: 8px;
+	align-items: center;
+}
+
+.lempi-history__head {
+	color: #8d9294;
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	padding-bottom: 9px;
+}
+
+.lempi-history__row {
+	min-height: 40px;
+	color: #c9ccca;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+	font-weight: 800;
+}
+
+.lempi-history__row.win span:nth-child(4) {
+	color: #55cf62;
+}
+
+.lempi-history__row.loss span:nth-child(3) {
+	color: #f06e5f;
+}
+
+.lempi-history__empty {
+	padding: 22px 4px;
+	color: #8d9294;
+	font-weight: 800;
+	text-align: center;
+}
+
 .lempi-stage {
+	grid-column: 2;
+	grid-row: 1;
 	position: relative;
 	min-width: 0;
 	overflow: hidden;
@@ -261,14 +314,18 @@
 }
 
 .lempi-controls {
+	grid-column: 2;
+	grid-row: 2;
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
 	gap: 8px;
 	padding: 9px;
-	border-left: 1px solid rgba(255, 255, 255, 0.08);
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .lempi-bet {
+	flex: 1 1 0;
+	min-width: 0;
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 6px 8px;
@@ -448,18 +505,21 @@
 	}
 
 	.lempi-stage {
+		grid-column: 1;
 		grid-row: 1;
 		min-height: 250px;
 	}
 
 	.lempi-controls {
 		grid-row: 2;
-		flex-direction: column;
+		grid-column: 1;
+		flex-direction: row;
 		gap: 7px;
 		padding: 8px 10px;
 	}
 
 	.lempi-pool {
+		grid-column: 1;
 		grid-row: 3;
 		border-right: 0;
 		border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -478,6 +538,10 @@
 	.lempi-bet {
 		gap: 6px;
 		padding: 7px;
+	}
+
+	.lempi-controls {
+		flex-direction: column;
 	}
 
 	.lempi-bet__action {

@@ -39,6 +39,18 @@ export interface LempiPoolPlayer {
 	winMicro: bigint | null;
 }
 
+export interface LempiBetHistoryEntry {
+	id: string;
+	roundId: string;
+	roundNumber: number;
+	slotId: LempiSlotId;
+	amountMicro: bigint;
+	crashMultiplier: number;
+	cashoutMultiplier: number | null;
+	payoutMicro: bigint | null;
+	result: "WIN" | "LOSS";
+}
+
 export interface LempiState {
 	roundId: string | null;
 	roundNumber: number;
@@ -55,6 +67,7 @@ export interface LempiState {
 	slots: Record<LempiSlotId, LempiBetSlot>;
 	toasts: LempiToast[];
 	poolPlayers: LempiPoolPlayer[];
+	betHistory: LempiBetHistoryEntry[];
 	acceptedCount: number;
 	cashedOutCount: number;
 	totalStakeMicro: bigint;
@@ -86,6 +99,7 @@ export interface LempiState {
 	setSlot: (slotId: LempiSlotId, patch: Partial<LempiBetSlot>) => void;
 	resetSlotsForRound: () => void;
 	addToast: (toast: Omit<LempiToast, "id">) => void;
+	addBetHistory: (entries: LempiBetHistoryEntry[]) => void;
 	setPool: (payload: {
 		acceptedCount: number;
 		cashedOutCount: number;
@@ -121,6 +135,7 @@ export const useLempiStore = create<LempiState>()((set) => ({
 	slots: { A: makeSlot("A"), B: makeSlot("B") },
 	toasts: [],
 	poolPlayers: [],
+	betHistory: [],
 	acceptedCount: 0,
 	cashedOutCount: 0,
 	totalStakeMicro: 0n,
@@ -175,6 +190,10 @@ export const useLempiStore = create<LempiState>()((set) => ({
 					id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
 				},
 			],
+		})),
+	addBetHistory: (entries) =>
+		set((state) => ({
+			betHistory: [...state.betHistory, ...entries].slice(-40),
 		})),
 	setPool: (payload) => set(payload),
 }));

@@ -10,7 +10,8 @@ import {
 import type React from "react";
 import { useEffect, useRef } from "react";
 import backgroundUrl from "../assets/lempi/background.png";
-import pilotUrl from "../assets/lempi/pilot.png";
+import pilotCrashUrl from "../assets/lempi/pilot-crash.png";
+import pilotUrl from "../assets/lempi/pilot-racing-side.png";
 import { useLempiStore } from "./LempiStore";
 
 export const LempiCanvas: React.FC = () => {
@@ -41,13 +42,16 @@ export const LempiCanvas: React.FC = () => {
 
 			const bgTexture = await Assets.load<Texture>(backgroundUrl);
 			const pilotTexture = await Assets.load<Texture>(pilotUrl);
+			const pilotCrashTexture = await Assets.load<Texture>(pilotCrashUrl);
 
 			const world = new Container();
 			const bg1 = new Sprite(bgTexture);
 			const bg2 = new Sprite(bgTexture);
 			const shade = new Graphics();
+			const wind = new Graphics();
 			const pilot = new Sprite(pilotTexture);
 			const flame = new Graphics();
+			const crashPilot = new Sprite(pilotCrashTexture);
 			const multiplierText = new Text({
 				text: "1.00x",
 				style: {
@@ -71,14 +75,28 @@ export const LempiCanvas: React.FC = () => {
 			});
 
 			pilot.anchor.set(0.5);
-			pilot.scale.set(0.14);
+			pilot.scale.set(0.16);
+			crashPilot.anchor.set(0.5);
+			crashPilot.scale.set(0.16);
+			crashPilot.visible = false;
 			multiplierText.anchor.set(0.5);
 			statusText.anchor.set(0.5);
 
-			world.addChild(bg1, bg2, shade, flame, pilot, multiplierText, statusText);
+			world.addChild(
+				bg1,
+				bg2,
+				shade,
+				wind,
+				flame,
+				pilot,
+				crashPilot,
+				multiplierText,
+				statusText,
+			);
 			app.stage.addChild(world);
 
 			let scroll = 0;
+			let windTime = 0;
 			const layout = () => {
 				const w = app.screen.width;
 				const h = app.screen.height;
@@ -114,6 +132,7 @@ export const LempiCanvas: React.FC = () => {
 				const state = useLempiStore.getState();
 				const w = app.screen.width;
 				const h = app.screen.height;
+				windTime += app.ticker.deltaTime;
 				const displayMultiplier =
 					state.roundState === "RESULT" && state.crashMultiplier
 						? state.crashMultiplier
@@ -152,15 +171,55 @@ export const LempiCanvas: React.FC = () => {
 						: h * 0.66;
 				pilot.x += (targetX - pilot.x) * 0.08;
 				pilot.y += (targetY - pilot.y) * 0.08;
-				pilot.rotation = crashed ? 0.75 : fly ? -0.28 : -0.12;
-				pilot.alpha = crashed ? 0.65 : 1;
+				pilot.rotation = fly ? -0.12 : -0.04;
+				pilot.visible = !crashed;
+				crashPilot.visible = crashed;
+				crashPilot.x = pilot.x + w * 0.02;
+				crashPilot.y = pilot.y + h * 0.02;
+				crashPilot.rotation = 0.04 + Math.sin(windTime * 0.2) * 0.03;
+				crashPilot.scale.set(0.16 + Math.sin(windTime * 0.34) * 0.003);
 
 				flame.clear();
+				wind.clear();
 				if (fly) {
-					flame.ellipse(pilot.x - 44, pilot.y + 24, 28, 9);
-					flame.fill({ color: 0xffd04d, alpha: 0.78 });
-					flame.ellipse(pilot.x - 58, pilot.y + 29, 38, 13);
-					flame.fill({ color: 0xf04a31, alpha: 0.34 });
+					const exhaustX = pilot.x - pilot.width * 0.49;
+					const exhaustY = pilot.y + pilot.height * 0.18;
+					const velocity = Math.min(1, Math.max(0, (state.multiplier - 1) / 3.8));
+					flame.ellipse(exhaustX + 7, exhaustY - 2, 24, 7);
+					flame.fill({ color: 0xe8f6ff, alpha: 0.34 + velocity * 0.18 });
+					flame.ellipse(exhaustX - 12, exhaustY + 2, 42, 11);
+					flame.fill({ color: 0x71d7ff, alpha: 0.16 + velocity * 0.12 });
+
+					for (let i = 0; i < 9; i += 1) {
+						const offset =
+							(windTime * (2.5 + velocity * 2.2) + i * 31) % 210;
+						const yDrift = Math.sin(windTime * 0.13 + i * 1.35) * 10;
+						const startX = exhaustX - 18 - offset;
+						const startY = exhaustY + (i - 4) * 8 + yDrift;
+						wind.moveTo(startX, startY);
+						wind.bezierCurveTo(
+							startX - 34,
+							startY - 7,
+							startX - 76,
+							startY + 9,
+							startX - 128,
+							startY + Math.sin(i) * 5,
+						);
+						wind.stroke({
+							color: 0xe8f6ff,
+							alpha: Math.max(0.06, 0.28 - offset / 780),
+							width: 1.5 + (i % 3) * 0.7,
+						});
+					}
+					wind.moveTo(exhaustX + 10, exhaustY - 12);
+					wind.lineTo(exhaustX - 56, exhaustY - 24);
+					wind.moveTo(exhaustX + 8, exhaustY + 13);
+					wind.lineTo(exhaustX - 62, exhaustY + 24);
+					wind.stroke({
+						color: 0x93e2ff,
+						alpha: 0.22 + velocity * 0.12,
+						width: 3,
+					});
 				}
 			});
 

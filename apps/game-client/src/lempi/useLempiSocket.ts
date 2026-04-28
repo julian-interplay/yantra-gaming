@@ -3,6 +3,7 @@ import { io, type Socket } from "socket.io-client";
 import { useSessionStore } from "../session/sessionStore";
 import {
 	hnlToMicro,
+	type LempiBetHistoryEntry,
 	type LempiSlotId,
 	type LempiState,
 	useLempiStore,
@@ -139,7 +140,7 @@ export function useLempiSocket(): {
 		if (!token) return;
 		const socketOptions = {
 			auth: { token },
-			transports: ["websocket", "polling"] as const,
+			transports: ["websocket", "polling"],
 			reconnection: true,
 			reconnectionAttempts: Infinity,
 			reconnectionDelay: 1000,
@@ -321,6 +322,25 @@ export function useLempiSocket(): {
 				const s = useLempiStore.getState();
 				s.setCrashResult(crashMultiplier);
 				s.setRoundState("RESULT");
+				const historyEntries: LempiBetHistoryEntry[] = (["A", "B"] as const)
+					.map((slotId) => {
+						const slot = s.slots[slotId];
+						if (!slot.betId) return null;
+						const won = slot.status === "CASHED_OUT";
+						return {
+							id: `${s.roundId ?? "round"}-${slot.betId}`,
+							roundId: s.roundId ?? "",
+							roundNumber: s.roundNumber,
+							slotId,
+							amountMicro: slot.amountMicro,
+							crashMultiplier,
+							cashoutMultiplier: slot.cashoutMultiplier,
+							payoutMicro: slot.payoutMicro,
+							result: won ? "WIN" : "LOSS",
+						};
+					})
+					.filter((entry): entry is LempiBetHistoryEntry => entry != null);
+				s.addBetHistory(historyEntries);
 				for (const slotId of ["A", "B"] as const) {
 					const slot = s.slots[slotId];
 					if (slot.status === "ACTIVE" || slot.status === "PENDING") {

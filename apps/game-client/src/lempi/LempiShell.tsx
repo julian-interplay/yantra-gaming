@@ -16,7 +16,9 @@ export const LempiShell: React.FC = () => {
 	const acceptedCount = useLempiStore((s) => s.acceptedCount);
 	const cashedOutCount = useLempiStore((s) => s.cashedOutCount);
 	const totalWinMicro = useLempiStore((s) => s.totalWinMicro);
+	const betHistory = useLempiStore((s) => s.betHistory);
 	const [notice, setNotice] = useState<string | null>(null);
+	const [poolTab, setPoolTab] = useState<"table" | "history">("table");
 
 	useEffect(() => {
 		const handler = (event: Event) => {
@@ -51,47 +53,88 @@ export const LempiShell: React.FC = () => {
 			<main className="lempi-layout">
 				<aside className="lempi-pool">
 					<div className="lempi-pool__tabs">
-						<span className="active">Mesa</span>
-						<span>Cartera</span>
-						<span>Senales IA</span>
+						<button
+							type="button"
+							className={poolTab === "table" ? "active" : ""}
+							onClick={() => setPoolTab("table")}
+						>
+							Mesa
+						</button>
+						<button
+							type="button"
+							className={poolTab === "history" ? "active" : ""}
+							onClick={() => setPoolTab("history")}
+						>
+							Historial
+						</button>
 					</div>
-					<div className="lempi-pool__summary">
-						<div>
-							<strong>
-								{cashedOutCount}/{acceptedCount}
-							</strong>
-							<span> Pozo</span>
-						</div>
-						<div>
-							<strong>{formatHnl(totalWinMicro)}</strong>
-							<span>Ganancia total HNL</span>
-						</div>
-					</div>
-					<div className="lempi-pool__table">
-						<div className="lempi-pool__head">
-							<span>Jugador</span>
-							<span>Apuesta</span>
-							<span>X</span>
-							<span>Gana</span>
-						</div>
-						{poolPlayers.map((player) => (
-							<div
-								className={`lempi-pool__row ${player.cashoutMultiplier ? "won" : ""}`}
-								key={player.betId}
-							>
-								<span>{player.playerRef}</span>
-								<span>{formatHnl(player.amountMicro)}</span>
-								<span>
-									{player.cashoutMultiplier
-										? `${player.cashoutMultiplier.toFixed(2)}x`
-										: "-"}
-								</span>
-								<span>
-									{player.winMicro ? formatHnl(player.winMicro) : "-"}
-								</span>
+					{poolTab === "table" ? (
+						<>
+							<div className="lempi-pool__summary">
+								<div>
+									<strong>
+										{cashedOutCount}/{acceptedCount}
+									</strong>
+									<span> Pozo</span>
+								</div>
+								<div>
+									<strong>{formatHnl(totalWinMicro)}</strong>
+									<span>Ganancia total HNL</span>
+								</div>
 							</div>
-						))}
-					</div>
+							<div className="lempi-pool__table">
+								<div className="lempi-pool__head">
+									<span>Jugador</span>
+									<span>Apuesta</span>
+									<span>X</span>
+									<span>Gana</span>
+								</div>
+								{poolPlayers.map((player) => (
+									<div
+										className={`lempi-pool__row ${player.cashoutMultiplier ? "won" : ""}`}
+										key={player.betId}
+									>
+										<span>{player.playerRef}</span>
+										<span>{formatHnl(player.amountMicro)}</span>
+										<span>
+											{player.cashoutMultiplier
+												? `${player.cashoutMultiplier.toFixed(2)}x`
+												: "-"}
+										</span>
+										<span>
+											{player.winMicro ? formatHnl(player.winMicro) : "-"}
+										</span>
+									</div>
+								))}
+							</div>
+						</>
+					) : (
+						<div className="lempi-history">
+							<div className="lempi-history__head">
+								<span>Ronda</span>
+								<span>Apuesta</span>
+								<span>Crash</span>
+								<span>Pago</span>
+							</div>
+							{betHistory.length === 0 ? (
+								<div className="lempi-history__empty">Sin apuestas aun</div>
+							) : (
+								[...betHistory].reverse().map((entry) => (
+									<div
+										className={`lempi-history__row ${entry.result.toLowerCase()}`}
+										key={entry.id}
+									>
+										<span>#{entry.roundNumber || "-"}</span>
+										<span>{formatHnl(entry.amountMicro)}</span>
+										<span>{entry.crashMultiplier.toFixed(2)}x</span>
+										<span>
+											{entry.payoutMicro ? formatHnl(entry.payoutMicro) : "-"}
+										</span>
+									</div>
+								))
+							)}
+						</div>
+					)}
 				</aside>
 
 				<section className="lempi-stage">

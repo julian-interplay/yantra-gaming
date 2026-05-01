@@ -509,7 +509,7 @@ model WalletCall {
   session                  GameSession?   @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   round                    Round?         @relation(fields: [roundId], references: [id], onDelete: SetNull)
 
-  @@unique([operatorId, direction, endpoint, requestUuid])
+  @@unique([operatorId, direction, endpoint, requestUuid, attempt])
   @@index([operatorId, transactionUuid])
   @@index([roundId])
   @@index([succeeded, createdAt])

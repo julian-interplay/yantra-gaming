@@ -171,7 +171,7 @@ async function main(): Promise<void> {
 			minBetMicro: 1_000_000n,
 			maxBetMicro: 10_000_000_000n,
 			commissionMicro: 0n,
-			bettingWindowMs: 15_000,
+			bettingWindowMs: 8_000,
 			rollingWindowMs: 4_000,
 			cooldownMs: 3_000,
 		},
@@ -187,7 +187,7 @@ async function main(): Promise<void> {
 			},
 			minBetMicro: 1_000_000n,
 			maxBetMicro: 10_000_000_000n,
-			bettingWindowMs: 15_000,
+			bettingWindowMs: 8_000,
 		},
 	});
 	logger.info("seed: game config", {

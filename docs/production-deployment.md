@@ -149,7 +149,7 @@ For Lempi Crash, the production game config should be:
 | `jurisdiction` | `HN` |
 | `minBetMicro` | `1000000` |
 | `maxBetMicro` | `10000000000` |
-| `bettingWindowMs` | `15000` |
+| `bettingWindowMs` | `8000` |
 | `rtp` | `0.99` |
 | `maxMultiplier` | `1000` |
 

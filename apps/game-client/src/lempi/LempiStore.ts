@@ -130,7 +130,7 @@ export const useLempiStore = create<LempiState>()((set) => ({
 	currency: "HNL",
 	minBetMicro: 1_000_000n,
 	maxBetMicro: 10_000_000_000n,
-	bettingWindowMs: 15_000,
+	bettingWindowMs: 8_000,
 	maxMultiplier: 1000,
 	slots: { A: makeSlot("A"), B: makeSlot("B") },
 	toasts: [],

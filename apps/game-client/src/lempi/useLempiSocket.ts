@@ -55,9 +55,23 @@ function spanishReason(reason: string | undefined, fallback: string): string {
 			return "Apuestas cerradas";
 		case "insufficient_funds":
 			return "Saldo insuficiente";
+		case "wallet_timeout":
+			return "La billetera no respondio";
+		case "wallet_error":
+			return "Error de billetera";
+		case "server_error":
+			return "Error del servidor";
+		case "invalid_token":
+			return "Sesion invalida";
+		case "round_not_open":
+			return "La ronda no acepta apuestas";
 		default:
 			return fallback;
 	}
+}
+
+function emitNotice(detail: string): void {
+	window.dispatchEvent(new CustomEvent("lempi:notice", { detail }));
 }
 
 export function useLempiSocket(): {
@@ -74,7 +88,10 @@ export function useLempiSocket(): {
 	const placeBet = useCallback(
 		(slotId: LempiSlotId, amountText: string, autoCashout: number | null) => {
 			const socket = socketRef.current;
-			if (!socket?.connected) return;
+			if (!socket?.connected) {
+				emitNotice("Conectando al servidor");
+				return;
+			}
 			const amountMicro = hnlToMicro(amountText);
 			const store = useLempiStore.getState();
 			store.setSlot(slotId, {
@@ -102,11 +119,7 @@ export function useLempiSocket(): {
 						return;
 					}
 					latest.setSlot(slotId, { status: "IDLE", betId: null });
-					window.dispatchEvent(
-						new CustomEvent("lempi:notice", {
-							detail: spanishReason(ack?.reason, "Apuesta rechazada"),
-						}),
-					);
+					emitNotice(spanishReason(ack?.reason, "Apuesta rechazada"));
 				},
 			);
 		},
@@ -116,7 +129,11 @@ export function useLempiSocket(): {
 	const cashOut = useCallback((slotId: LempiSlotId) => {
 		const socket = socketRef.current;
 		const slot = useLempiStore.getState().slots[slotId];
-		if (!socket?.connected || !slot.betId || slot.status !== "ACTIVE") return;
+		if (!socket?.connected) {
+			emitNotice("Conectando al servidor");
+			return;
+		}
+		if (!slot.betId || slot.status !== "ACTIVE") return;
 		socket.emit(
 			"cash_out",
 			{ betId: slot.betId, slotId },
@@ -127,11 +144,7 @@ export function useLempiSocket(): {
 				payoutMicro?: string;
 			}) => {
 				if (ack?.ok) return;
-				window.dispatchEvent(
-					new CustomEvent("lempi:notice", {
-						detail: spanishReason(ack?.reason, "Retiro rechazado"),
-					}),
-				);
+				emitNotice(spanishReason(ack?.reason, "Retiro rechazado"));
 			},
 		);
 	}, []);
@@ -175,7 +188,20 @@ export function useLempiSocket(): {
 		};
 
 		socket.on("connect", () => useLempiStore.getState().setConnected(true));
-		socket.on("disconnect", () => useLempiStore.getState().setConnected(false));
+		socket.on("connect_error", (err) => {
+			useLempiStore.getState().setConnected(false);
+			emitNotice(`Error del servidor: ${err.message || "conexion fallida"}`);
+		});
+		socket.on("error", (err: { message?: string } | string | undefined) => {
+			const message = typeof err === "string" ? err : err?.message;
+			emitNotice(`Error del servidor: ${message || "intenta de nuevo"}`);
+		});
+		socket.on("disconnect", (reason) => {
+			useLempiStore.getState().setConnected(false);
+			if (reason !== "io client disconnect") {
+				emitNotice("Conexion perdida con el servidor");
+			}
+		});
 
 		socket.on(
 			"game_config",
@@ -361,10 +387,8 @@ export function useLempiSocket(): {
 			},
 		);
 
-		socket.on("bet_rejected", () => {
-			window.dispatchEvent(
-				new CustomEvent("lempi:notice", { detail: "Apuesta rechazada" }),
-			);
+		socket.on("bet_rejected", (data: { reason?: string } | undefined) => {
+			emitNotice(spanishReason(data?.reason, "Apuesta rechazada"));
 		});
 
 		return () => {

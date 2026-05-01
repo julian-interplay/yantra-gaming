@@ -39,16 +39,6 @@ export const LempiShell: React.FC = () => {
 				</div>
 			)}
 			<SessionExpiryBanner />
-			<header className="lempi-header">
-				<div className="lempi-header__brand">
-					<strong>Lempi Crash</strong>
-					<span className={isConnected ? "connected" : ""} />
-				</div>
-				<div className="lempi-header__balance">
-					<span>Saldo</span>
-					<strong>{formatHnl(balanceMicro, true)}</strong>
-				</div>
-			</header>
 
 			<main className="lempi-layout">
 				<aside className="lempi-pool">
@@ -138,6 +128,18 @@ export const LempiShell: React.FC = () => {
 				</aside>
 
 				<section className="lempi-stage">
+					<div className="lempi-stage__hud" aria-label="Estado del juego">
+						<div className="lempi-stage__brand">
+							<strong className="lempi-stage__title">Lempi Crash</strong>
+							<span
+								className={`lempi-stage__status ${isConnected ? "connected" : ""}`}
+							/>
+						</div>
+						<div className="lempi-stage__balance">
+							<span>Saldo</span>
+							<strong>{formatHnl(balanceMicro, true)}</strong>
+						</div>
+					</div>
 					<LempiCanvas />
 					<div className="lempi-toasts">
 						{toasts.map((toast) => (
@@ -153,7 +155,11 @@ export const LempiShell: React.FC = () => {
 				<LempiControls placeBet={placeBet} cashOut={cashOut} />
 			</main>
 
-			{notice && <div className="lempi-notice">{notice}</div>}
+			{notice && (
+				<div className="lempi-notice" role="status" aria-live="polite">
+					{notice}
+				</div>
+			)}
 		</div>
 	);
 };

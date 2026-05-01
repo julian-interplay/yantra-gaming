@@ -27,76 +27,9 @@
 	font-weight: 800;
 }
 
-.lempi-header {
-	position: fixed;
-	top: var(--lempi-banner-height);
-	left: 0;
-	right: 0;
-	z-index: var(--z-header);
-	height: var(--header-height);
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 0 var(--space-lg);
-	background: rgba(7, 8, 8, 0.94);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-	backdrop-filter: blur(12px);
-	-webkit-backdrop-filter: blur(12px);
-}
-
-.lempi-header__brand {
-	display: inline-flex;
-	align-items: center;
-	gap: 12px;
-	min-width: 0;
-}
-
-.lempi-header__brand strong {
-	color: #f6d66d;
-	font-size: clamp(1.05rem, 2.4vw, 1.45rem);
-	font-weight: 950;
-	text-transform: uppercase;
-}
-
-.lempi-header__brand span {
-	width: 8px;
-	height: 8px;
-	flex: 0 0 auto;
-	border-radius: 999px;
-	background: #d64b42;
-	box-shadow: 0 0 10px rgba(214, 75, 66, 0.8);
-}
-
-.lempi-header__brand span.connected {
-	background: #1fd36a;
-	box-shadow: 0 0 10px rgba(31, 211, 106, 0.8);
-	animation: lempiLivePulse 1.4s ease-in-out infinite;
-}
-
-.lempi-header__balance {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-end;
-	line-height: 1.1;
-}
-
-.lempi-header__balance span {
-	color: #8d9294;
-	font-size: 0.68rem;
-	font-weight: 800;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-}
-
-.lempi-header__balance strong {
-	font-family: var(--font-numbers);
-	font-size: 1rem;
-	color: #f3f5f1;
-}
-
 .lempi-layout {
-	height: calc(100dvh - var(--header-height) - var(--lempi-banner-height));
-	margin-top: calc(var(--header-height) + var(--lempi-banner-height));
+	height: calc(100dvh - var(--lempi-banner-height));
+	margin-top: var(--lempi-banner-height);
 	display: grid;
 	grid-template-columns: 300px minmax(0, 1fr);
 	grid-template-rows: minmax(0, 1fr) auto;
@@ -257,6 +190,81 @@
 	background: #0b0b12;
 }
 
+.lempi-stage__hud {
+	position: absolute;
+	top: 14px;
+	left: 16px;
+	right: 16px;
+	z-index: 6;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 14px;
+	pointer-events: none;
+}
+
+.lempi-stage__brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 11px;
+	min-width: 0;
+}
+
+.lempi-stage__title {
+	color: #f7d45c;
+	font-family: var(--font-display), Georgia, "Times New Roman", serif;
+	font-size: 1.65rem;
+	font-weight: 950;
+	letter-spacing: 0.06em;
+	line-height: 1;
+	text-transform: uppercase;
+	-webkit-text-stroke: 1px rgba(79, 47, 18, 0.9);
+	text-shadow:
+		0 2px 0 #5f3512,
+		0 4px 0 #1a0e06,
+		0 10px 18px rgba(0, 0, 0, 0.62),
+		0 0 18px rgba(245, 196, 74, 0.2);
+}
+
+.lempi-stage__status {
+	width: 9px;
+	height: 9px;
+	flex: 0 0 auto;
+	border-radius: 999px;
+	background: #d64b42;
+	box-shadow: 0 0 12px rgba(214, 75, 66, 0.9);
+}
+
+.lempi-stage__status.connected {
+	background: #1fd36a;
+	box-shadow: 0 0 14px rgba(31, 211, 106, 0.9);
+	animation: lempiLivePulse 1.4s ease-in-out infinite;
+}
+
+.lempi-stage__balance {
+	display: flex;
+	flex: 0 0 auto;
+	flex-direction: column;
+	align-items: flex-end;
+	line-height: 1.1;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.76);
+}
+
+.lempi-stage__balance span {
+	color: #aeb3b2;
+	font-size: 0.68rem;
+	font-weight: 900;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.lempi-stage__balance strong {
+	color: #f6f7f2;
+	font-family: var(--font-numbers);
+	font-size: 1.05rem;
+	font-weight: 950;
+}
+
 @keyframes lempiLivePulse {
 	0%,
 	100% {
@@ -283,7 +291,7 @@
 .lempi-toasts {
 	position: absolute;
 	left: 14px;
-	top: 14px;
+	top: 62px;
 	z-index: 5;
 	display: flex;
 	flex-direction: column;
@@ -527,12 +535,35 @@
 }
 
 @media (max-width: 560px) {
-	.lempi-header {
-		padding: 0 var(--space-md);
-	}
-
 	.lempi-layout {
 		grid-template-rows: minmax(270px, 36vh) auto minmax(100px, 1fr);
+	}
+
+	.lempi-stage__hud {
+		top: 12px;
+		left: 14px;
+		right: 14px;
+	}
+
+	.lempi-stage__title {
+		font-size: 1.15rem;
+		letter-spacing: 0.04em;
+		text-shadow:
+			0 1px 0 #5f3512,
+			0 3px 0 #1a0e06,
+			0 8px 14px rgba(0, 0, 0, 0.66);
+	}
+
+	.lempi-stage__balance span {
+		font-size: 0.62rem;
+	}
+
+	.lempi-stage__balance strong {
+		font-size: 0.95rem;
+	}
+
+	.lempi-toasts {
+		top: 54px;
 	}
 
 	.lempi-bet {

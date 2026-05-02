@@ -601,6 +601,7 @@ export class GameEngine {
 		) {
 			return { ok: false, reason: "engine_mismatch" };
 		}
+		const round = this.active;
 
 		const amount = params.input.amountMicro;
 		if (amount < this.cfg.minBetMicro || amount > this.cfg.maxBetMicro) {
@@ -638,6 +639,7 @@ export class GameEngine {
 		const previousBet = await prisma.bet.findFirst({
 			where: {
 				sessionId: params.sessionId,
+				roundId: { not: round.id },
 				status: { in: ["ACCEPTED", "SETTLED"] },
 			},
 			orderBy: { placedAt: "desc" },
@@ -692,7 +694,6 @@ export class GameEngine {
 
 		const txUuid = newUuid();
 		const requestUuid = newUuid();
-		const round = this.active;
 
 		const bet = await prisma.bet.create({
 			data: {

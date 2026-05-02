@@ -65,6 +65,8 @@ function spanishReason(reason: string | undefined, fallback: string): string {
 			return "Sesion invalida";
 		case "round_not_open":
 			return "La ronda no acepta apuestas";
+		case "spin_too_fast":
+			return "Espera un momento antes de volver a apostar";
 		default:
 			return fallback;
 	}

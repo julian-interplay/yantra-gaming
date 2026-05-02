@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	type LaunchParams,
@@ -20,7 +20,6 @@ import { CanvasErrorBoundary } from "./ui/CanvasErrorBoundary";
 import { CanvasToolbar } from "./ui/CanvasToolbar";
 import { ErrorScreen } from "./ui/ErrorScreen";
 import { FairnessDrawer } from "./ui/FairnessDrawer";
-import { GameCanvas } from "./ui/GameCanvas";
 import { GameSplash } from "./ui/GameSplash";
 import { Header } from "./ui/Header";
 import { InfoSheet } from "./ui/InfoSheet";
@@ -29,6 +28,17 @@ import { LossToast } from "./ui/LossToast";
 import { OfflineBanner } from "./ui/OfflineBanner";
 import { SessionExpiryBanner } from "./ui/SessionExpiryBanner";
 import { WinToast } from "./ui/WinToast";
+
+let gameCanvasPromise: Promise<{ default: React.ComponentType }> | null = null;
+
+function loadGameCanvas(): Promise<{ default: React.ComponentType }> {
+	gameCanvasPromise ??= import("./ui/GameCanvas").then((mod) => ({
+		default: mod.GameCanvas,
+	}));
+	return gameCanvasPromise;
+}
+
+const LazyGameCanvas = lazy(loadGameCanvas);
 
 /**
  * Full page layout — header on top, LeftPanel | canvas-area | BetControls in
@@ -54,6 +64,13 @@ const GameShell: React.FC = () => {
 		const hideTimer = setTimeout(() => setSplashHidden(true), 400);
 		return () => clearTimeout(hideTimer);
 	}, [isConnected]);
+
+	useEffect(() => {
+		const frame = window.requestAnimationFrame(() => {
+			void loadGameCanvas();
+		});
+		return () => window.cancelAnimationFrame(frame);
+	}, []);
 
 	// Unmount the splash after its fade-out transition completes (matches 0.45s).
 	useEffect(() => {
@@ -84,7 +101,9 @@ const GameShell: React.FC = () => {
 
 				<div className="game-page__canvas-area">
 					<CanvasErrorBoundary>
-						<GameCanvas />
+						<Suspense fallback={<div className="game-canvas" />}>
+							<LazyGameCanvas />
+						</Suspense>
 					</CanvasErrorBoundary>
 
 					{splashMounted && <GameSplash hidden={splashHidden} />}

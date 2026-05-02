@@ -1,12 +1,24 @@
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { SessionExpiryBanner } from "../ui/SessionExpiryBanner";
-import { LempiCanvas } from "./LempiCanvas";
 import { LempiControls } from "./LempiControls";
 import { LempiLoadingScreen } from "./LempiLoadingScreen";
 import { formatHnl, useLempiStore } from "./LempiStore";
 import { useLempiSocket } from "./useLempiSocket";
 import "./LempiShell.css";
+
+const BALANCE_GATE_MAX_MS = 4500;
+
+let lempiCanvasPromise: Promise<{ default: React.ComponentType }> | null = null;
+
+function loadLempiCanvas(): Promise<{ default: React.ComponentType }> {
+	lempiCanvasPromise ??= import("./LempiCanvas").then((mod) => ({
+		default: mod.LempiCanvas,
+	}));
+	return lempiCanvasPromise;
+}
+
+const LazyLempiCanvas = lazy(loadLempiCanvas);
 
 export const LempiShell: React.FC = () => {
 	const { placeBet, cashOut } = useLempiSocket();
@@ -25,10 +37,31 @@ export const LempiShell: React.FC = () => {
 	const [notice, setNotice] = useState<string | null>(null);
 	const [poolTab, setPoolTab] = useState<"table" | "history">("table");
 	const [loadingComplete, setLoadingComplete] = useState(false);
-	const loaderReady = isConnected && hasInitialBalanceResponse;
+	const [balanceGateExpired, setBalanceGateExpired] = useState(false);
+	const loaderReady =
+		isConnected && (hasInitialBalanceResponse || balanceGateExpired);
 	const handleLoadingComplete = useCallback(() => {
 		setLoadingComplete(true);
 	}, []);
+
+	useEffect(() => {
+		const frame = window.requestAnimationFrame(() => {
+			void loadLempiCanvas();
+		});
+		return () => window.cancelAnimationFrame(frame);
+	}, []);
+
+	useEffect(() => {
+		if (hasInitialBalanceResponse) {
+			setBalanceGateExpired(false);
+			return;
+		}
+		const timer = window.setTimeout(
+			() => setBalanceGateExpired(true),
+			BALANCE_GATE_MAX_MS,
+		);
+		return () => window.clearTimeout(timer);
+	}, [hasInitialBalanceResponse]);
 
 	useEffect(() => {
 		const handler = (event: Event) => {
@@ -151,10 +184,20 @@ export const LempiShell: React.FC = () => {
 						</div>
 						<div className="lempi-stage__balance">
 							<span>Saldo</span>
-							<strong>{formatHnl(balanceMicro, true)}</strong>
+							<strong>
+								{hasInitialBalanceResponse
+									? formatHnl(balanceMicro, true)
+									: "..."}
+							</strong>
 						</div>
 					</div>
-					<LempiCanvas />
+					{loadingComplete ? (
+						<Suspense fallback={<div className="lempi-canvas" />}>
+							<LazyLempiCanvas />
+						</Suspense>
+					) : (
+						<div className="lempi-canvas" />
+					)}
 					<div className="lempi-toasts">
 						{toasts.map((toast) => (
 							<div className="lempi-toast" key={toast.id}>

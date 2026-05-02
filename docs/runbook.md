@@ -133,11 +133,30 @@ Every variable the RGS reads. Source: `apps/rgs-server/src/config.ts`.
 | `SIGNATURE_WINDOW_SECONDS` | `30` | Max clock skew on inbound HMAC requests. Do not exceed 60. |
 | `GAME_CLIENT_BASE_URL` | `http://localhost:3100` | Base URL used in launch responses. |
 | `WALLET_CALL_TIMEOUT_MS` | `5000` | Outbound wallet-call timeout. Beyond this → synthetic rollback. |
+| `MOCK_WALLET_CALLBACK_URL` | `http://localhost:4300/wallet` locally; required for production seed | Seeded mock operator wallet callback base. Never use localhost on Railway. |
 | `NODE_ENV` | `development` | `development` / `production` / `test`. |
 | `TURNSTILE_SECRET_KEY` | (unset → disabled) | Cloudflare Turnstile secret. When set, `/v1/session` requires a valid token. |
 | `TURNSTILE_SITEVERIFY_URL` | `https://challenges.cloudflare.com/turnstile/v0/siteverify` | Override for self-hosted siteverify. |
 
-### 3.3 Observability (optional)
+### 3.3 Railway Wallet Callback Check
+
+After every Railway deploy that runs `bun src/seed.ts`, verify the seeded mock operator did not point back to localhost:
+
+```sql
+SELECT id, wallet_callback_url
+FROM operators
+WHERE id = '00000000-0000-4000-8000-000000000001';
+```
+
+For the Lempi pilot, the value must be:
+
+```text
+https://hondudev.testinterplay.com/api/integrations/casino/interplay/wallet
+```
+
+Then verify `/healthz`, `/readyz`, refresh the game once, and confirm a `BALANCE` row in `wallet_calls` has `succeeded = true`.
+
+### 3.4 Observability (optional)
 
 | Var | Default | Purpose |
 | --- | --- | --- |
@@ -145,7 +164,7 @@ Every variable the RGS reads. Source: `apps/rgs-server/src/config.ts`.
 | `OTEL_SERVICE_NAME` | `yantra-rgs` | Service name for traces |
 | `OTEL_LOG_LEVEL` | `info` | OTel SDK log verbosity |
 
-### 3.4 Secret-strength guidance
+### 3.5 Secret-strength guidance
 
 - `SESSION_JWT_SECRET` / `PORTAL_JWT_SECRET`: ≥ 32 random bytes, base64 or hex. Generate:
   ```bash

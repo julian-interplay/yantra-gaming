@@ -35,12 +35,7 @@ const PlaceBetEnvelopeSchema = z.object({
 	turbo: z.boolean().optional(),
 });
 
-const INITIAL_BALANCE_RETRY_DELAYS_MS = [0, 750, 2000] as const;
 const presenceByRoom = new Map<string, Map<string, number>>();
-
-function wait(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 function gameRoom(
 	operatorId: string,
@@ -171,45 +166,47 @@ export function attachGameSocket(io: SocketIOServer): void {
 		}
 
 		// Pull the player's current balance from the operator wallet and push it
-		// down so the UI has something to show before the first bet/win. Vercel
-		// callbacks can cold-start, so retry read-only balance pings briefly.
+		// down so the UI has something to show before the first bet/win.
 		void (async () => {
-			const requestUuid = newUuid();
-			for (let i = 0; i < INITIAL_BALANCE_RETRY_DELAYS_MS.length; i += 1) {
-				const delayMs = INITIAL_BALANCE_RETRY_DELAYS_MS[i] ?? 0;
-				if (delayMs > 0) await wait(delayMs);
-				if (!socket.connected) return;
-
-				try {
-					const res = await engine.getWalletClient().balance(
-						{
-							requestUuid,
-							operatorId,
-							playerRef,
-							currency,
-							gameCode,
-						},
-						{ sessionId, attempt: i + 1 },
-					);
-					if (res.balanceMicro != null) {
-						socket.emit("balance_update", {
-							playerRef,
-							balanceMicro: res.balanceMicro.toString(),
-							currency: res.currency ?? currency,
-						});
-						return;
-					}
-					logger.warn("initial balance fetch returned no balance", {
-						sessionId,
-						attempt: i + 1,
+			try {
+				const res = await engine.getWalletClient().balance(
+					{
+						requestUuid: newUuid(),
+						operatorId,
+						playerRef,
+						currency,
+						gameCode,
+					},
+					{ sessionId },
+				);
+				if (res.balanceMicro != null && socket.connected) {
+					socket.emit("balance_update", {
+						playerRef,
+						balanceMicro: res.balanceMicro.toString(),
+						currency: res.currency ?? currency,
+					});
+					return;
+				}
+				logger.warn("initial balance fetch returned no balance", {
+					sessionId,
+					status: res.status,
+					message: res.message ?? null,
+				});
+				if (socket.connected) {
+					socket.emit("balance_unavailable", {
 						status: res.status,
 						message: res.message ?? null,
 					});
-				} catch (err) {
-					logger.warn("initial balance fetch failed", {
-						sessionId,
-						attempt: i + 1,
-						err: (err as Error).message,
+				}
+			} catch (err) {
+				logger.warn("initial balance fetch failed", {
+					sessionId,
+					err: (err as Error).message,
+				});
+				if (socket.connected) {
+					socket.emit("balance_unavailable", {
+						status: "RS_ERROR_UNKNOWN",
+						message: (err as Error).message,
 					});
 				}
 			}

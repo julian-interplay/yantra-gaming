@@ -14,7 +14,31 @@ const MOCK_OPERATOR_API_KID = "kid_mock_dev";
 const MOCK_OPERATOR_API_SECRET = "mock-dev-shared-secret";
 const MOCK_OPERATOR_WALLET_KID = "kid_mock_dev_wallet";
 const MOCK_OPERATOR_WALLET_SECRET = "mock-dev-wallet-secret";
-const MOCK_WALLET_CALLBACK_URL = "http://localhost:4300/wallet";
+const LOCAL_MOCK_WALLET_CALLBACK_URL = "http://localhost:4300/wallet";
+
+const configuredMockWalletCallbackUrl =
+	process.env.MOCK_WALLET_CALLBACK_URL?.trim();
+const isProductionSeed = process.env.NODE_ENV === "production";
+
+if (isProductionSeed && !configuredMockWalletCallbackUrl) {
+	throw new Error(
+		"MOCK_WALLET_CALLBACK_URL must be set when running seed in production",
+	);
+}
+
+const mockWalletCallbackUrl =
+	configuredMockWalletCallbackUrl ?? LOCAL_MOCK_WALLET_CALLBACK_URL;
+const shouldWriteMockWalletCallbackUrl =
+	Boolean(configuredMockWalletCallbackUrl) || !isProductionSeed;
+
+function walletCallbackLogValue(rawUrl: string): string {
+	try {
+		const url = new URL(rawUrl);
+		return `${url.protocol}//${url.host}${url.pathname}`;
+	} catch {
+		return rawUrl;
+	}
+}
 
 async function main(): Promise<void> {
 	const operator = await prisma.operator.upsert({
@@ -28,7 +52,7 @@ async function main(): Promise<void> {
 			jurisdiction: "LK",
 			defaultCurrency: "HNL",
 			allowedCurrencies: ["HNL", "LKR"],
-			walletCallbackUrl: MOCK_WALLET_CALLBACK_URL,
+			walletCallbackUrl: mockWalletCallbackUrl,
 			ipAllowList: [],
 			notes: "Seeded for local development. Safe to destroy.",
 		},
@@ -40,10 +64,19 @@ async function main(): Promise<void> {
 			jurisdiction: "HN",
 			defaultCurrency: "HNL",
 			allowedCurrencies: ["HNL", "LKR"],
-			walletCallbackUrl: MOCK_WALLET_CALLBACK_URL,
+			...(shouldWriteMockWalletCallbackUrl
+				? { walletCallbackUrl: mockWalletCallbackUrl }
+				: {}),
 		},
 	});
-	logger.info("seed: operator", { id: operator.id, slug: operator.slug });
+	logger.info("seed: operator", {
+		id: operator.id,
+		slug: operator.slug,
+		walletCallbackUrl: walletCallbackLogValue(operator.walletCallbackUrl),
+		walletCallbackSource: configuredMockWalletCallbackUrl
+			? "MOCK_WALLET_CALLBACK_URL"
+			: "local-default",
+	});
 
 	const existingInbound = await prisma.operatorCredential.findUnique({
 		where: { kid: MOCK_OPERATOR_API_KID },

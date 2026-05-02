@@ -467,6 +467,10 @@ export function useLempiSocket(): {
 			},
 		);
 
+		socket.on("balance_unavailable", () => {
+			emitNotice("Saldo no disponible. Intenta recargar.");
+		});
+
 		socket.on("bet_rejected", (data: { reason?: string } | undefined) => {
 			emitNotice(spanishReason(data?.reason, "Apuesta rechazada"));
 		});

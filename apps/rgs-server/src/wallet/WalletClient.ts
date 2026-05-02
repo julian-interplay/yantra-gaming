@@ -106,31 +106,34 @@ export class WalletClient {
       roundId?: string;
     },
   ): Promise<WalletResponse> {
-    // Circuit-breaker short-circuit. Returns a synthetic TIMEOUT — the game
-    // engine already treats that as "uncertain, roll back, enqueue retry",
-    // which is exactly what we want while a downstream is sustained-broken.
+    // Circuit-breaker short-circuit for state-changing wallet calls. BALANCE is
+    // read-only display data; failures should be logged/audited, but must not
+    // suppress later balance refreshes or affect gameplay settlement behavior.
+    const useCircuitBreaker = endpoint !== 'BALANCE';
     const breakerKey = `${this.operatorId}:${endpoint}`;
-    const decision = this.breaker.tryAcquire(breakerKey);
-    circuitBreakerState.set(
-      { operator: this.operatorId, endpoint },
-      STATE_TO_NUMBER[decision.state],
-    );
-    if (!decision.allow) {
-      logger.warn('wallet_circuit_short_circuit', {
-        operatorId: this.operatorId,
-        endpoint,
-        state: decision.state,
-      });
-      walletCallTotal.inc({
-        operator: this.operatorId,
-        endpoint,
-        status: 'SHORT_CIRCUIT',
-      });
-      return {
-        status: RsStatus.TIMEOUT,
-        requestUuid: req.requestUuid,
-        message: decision.state === 'OPEN' ? 'circuit_open' : 'circuit_probing',
-      };
+    if (useCircuitBreaker) {
+      const decision = this.breaker.tryAcquire(breakerKey);
+      circuitBreakerState.set(
+        { operator: this.operatorId, endpoint },
+        STATE_TO_NUMBER[decision.state],
+      );
+      if (!decision.allow) {
+        logger.warn('wallet_circuit_short_circuit', {
+          operatorId: this.operatorId,
+          endpoint,
+          state: decision.state,
+        });
+        walletCallTotal.inc({
+          operator: this.operatorId,
+          endpoint,
+          status: 'SHORT_CIRCUIT',
+        });
+        return {
+          status: RsStatus.TIMEOUT,
+          requestUuid: req.requestUuid,
+          message: decision.state === 'OPEN' ? 'circuit_open' : 'circuit_probing',
+        };
+      }
     }
 
     const started = Date.now();
@@ -180,10 +183,12 @@ export class WalletClient {
     // Record circuit-breaker outcome. Operator-side business rejects (insufficient
     // funds, limit reached, user disabled, duplicate tx) are NOT infrastructure
     // failures — they're valid answers from a healthy wallet. Don't punish them.
-    if (succeeded || isRejectStatus(response.status) || response.status === RsStatus.DUPLICATE_TRANSACTION) {
-      this.breaker.recordSuccess(breakerKey);
-    } else {
-      this.breaker.recordFailure(breakerKey);
+    if (useCircuitBreaker) {
+      if (succeeded || isRejectStatus(response.status) || response.status === RsStatus.DUPLICATE_TRANSACTION) {
+        this.breaker.recordSuccess(breakerKey);
+      } else {
+        this.breaker.recordFailure(breakerKey);
+      }
     }
 
     if (call) {

@@ -125,6 +125,7 @@ real operator values before accepting traffic.
 | `GAME_CLIENT_BASE_URL` | Public Cloudflare Pages game URL |
 | `CORS_ORIGIN` | Comma-separated production origins |
 | `WALLET_CALL_TIMEOUT_MS` | Start with `5000` |
+| `MOCK_WALLET_CALLBACK_URL` | Public operator wallet callback base; required if deploy runs `bun src/seed.ts` |
 | `SIGNATURE_WINDOW_SECONDS` | Start with `30` |
 
 Generate secrets:

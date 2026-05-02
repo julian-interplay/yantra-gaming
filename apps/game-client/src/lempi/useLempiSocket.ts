@@ -222,6 +222,7 @@ export function useLempiSocket(): {
 
 	useEffect(() => {
 		if (!token) return;
+		useLempiStore.getState().setInitialBalanceResponse(false);
 		const socketOptions = {
 			auth: { token },
 			transports: ["websocket", "polling"],
@@ -468,6 +469,7 @@ export function useLempiSocket(): {
 		);
 
 		socket.on("balance_unavailable", () => {
+			useLempiStore.getState().setInitialBalanceResponse(true);
 			emitNotice("Saldo no disponible. Intenta recargar.");
 		});
 

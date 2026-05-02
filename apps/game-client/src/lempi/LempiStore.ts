@@ -75,6 +75,7 @@ export interface LempiState {
 	totalStakeMicro: bigint;
 	totalWinMicro: bigint;
 	isConnected: boolean;
+	hasInitialBalanceResponse: boolean;
 
 	setConnected: (connected: boolean) => void;
 	setConfig: (
@@ -98,6 +99,7 @@ export interface LempiState {
 	setMultiplier: (multiplier: number) => void;
 	setCrashResult: (multiplier: number) => void;
 	setBalanceMicro: (amount: bigint) => void;
+	setInitialBalanceResponse: (received: boolean) => void;
 	setSlot: (slotId: LempiSlotId, patch: Partial<LempiBetSlot>) => void;
 	resetSlotsForRound: () => void;
 	addToast: (toast: Omit<LempiToast, "id">) => void;
@@ -165,6 +167,7 @@ export const useLempiStore = create<LempiState>()((set) => ({
 	totalStakeMicro: 0n,
 	totalWinMicro: 0n,
 	isConnected: false,
+	hasInitialBalanceResponse: false,
 
 	setConnected: (connected) => set({ isConnected: connected }),
 	setConfig: (patch) => set((state) => ({ ...state, ...patch })),
@@ -174,7 +177,10 @@ export const useLempiStore = create<LempiState>()((set) => ({
 	setMultiplier: (multiplier) => set({ multiplier }),
 	setCrashResult: (crashMultiplier) =>
 		set({ crashMultiplier, multiplier: crashMultiplier }),
-	setBalanceMicro: (balanceMicro) => set({ balanceMicro }),
+	setBalanceMicro: (balanceMicro) =>
+		set({ balanceMicro, hasInitialBalanceResponse: true }),
+	setInitialBalanceResponse: (hasInitialBalanceResponse) =>
+		set({ hasInitialBalanceResponse }),
 	setSlot: (slotId, patch) =>
 		set((state) => ({
 			slots: {

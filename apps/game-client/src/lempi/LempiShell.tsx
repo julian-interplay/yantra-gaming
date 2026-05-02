@@ -1,8 +1,9 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SessionExpiryBanner } from "../ui/SessionExpiryBanner";
 import { LempiCanvas } from "./LempiCanvas";
 import { LempiControls } from "./LempiControls";
+import { LempiLoadingScreen } from "./LempiLoadingScreen";
 import { formatHnl, useLempiStore } from "./LempiStore";
 import { useLempiSocket } from "./useLempiSocket";
 import "./LempiShell.css";
@@ -10,6 +11,9 @@ import "./LempiShell.css";
 export const LempiShell: React.FC = () => {
 	const { placeBet, cashOut } = useLempiSocket();
 	const isConnected = useLempiStore((s) => s.isConnected);
+	const hasInitialBalanceResponse = useLempiStore(
+		(s) => s.hasInitialBalanceResponse,
+	);
 	const balanceMicro = useLempiStore((s) => s.balanceMicro);
 	const toasts = useLempiStore((s) => s.toasts);
 	const poolPlayers = useLempiStore((s) => s.poolPlayers);
@@ -20,6 +24,11 @@ export const LempiShell: React.FC = () => {
 	const betHistory = useLempiStore((s) => s.betHistory);
 	const [notice, setNotice] = useState<string | null>(null);
 	const [poolTab, setPoolTab] = useState<"table" | "history">("table");
+	const [loadingComplete, setLoadingComplete] = useState(false);
+	const loaderReady = isConnected && hasInitialBalanceResponse;
+	const handleLoadingComplete = useCallback(() => {
+		setLoadingComplete(true);
+	}, []);
 
 	useEffect(() => {
 		const handler = (event: Event) => {
@@ -164,6 +173,13 @@ export const LempiShell: React.FC = () => {
 				<div className="lempi-notice" role="status" aria-live="polite">
 					{notice}
 				</div>
+			)}
+
+			{!loadingComplete && (
+				<LempiLoadingScreen
+					ready={loaderReady}
+					onComplete={handleLoadingComplete}
+				/>
 			)}
 		</div>
 	);

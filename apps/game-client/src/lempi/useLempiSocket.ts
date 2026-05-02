@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { io, type Socket } from "socket.io-client";
+import { apiRequest } from "../api/client";
 import { useSessionStore } from "../session/sessionStore";
 import {
 	hnlToMicro,
@@ -15,6 +16,20 @@ const SOCKET_URL = (import.meta.env.VITE_RGS_SOCKET_URL ?? "").replace(
 	"",
 );
 
+interface LempiHistoryResponse {
+	items?: Array<{
+		betId?: string;
+		roundId?: string;
+		roundNumber?: number;
+		amountMicro?: string;
+		slotId?: string | null;
+		crashMultiplier?: number | null;
+		cashoutMultiplier?: number | null;
+		payoutMicro?: string | null;
+		result?: "WIN" | "LOSS";
+	}>;
+}
+
 function asBig(value: unknown): bigint | null {
 	if (typeof value !== "string") return null;
 	try {
@@ -22,6 +37,40 @@ function asBig(value: unknown): bigint | null {
 	} catch {
 		return null;
 	}
+}
+
+function isLempiSlotId(value: unknown): value is LempiSlotId {
+	return value === "A" || value === "B";
+}
+
+function historyItemToEntry(
+	item: NonNullable<LempiHistoryResponse["items"]>[number],
+): LempiBetHistoryEntry | null {
+	const amountMicro = asBig(item.amountMicro);
+	const payoutMicro = item.payoutMicro ? asBig(item.payoutMicro) : null;
+	if (
+		!item.betId ||
+		!item.roundId ||
+		typeof item.roundNumber !== "number" ||
+		!isLempiSlotId(item.slotId) ||
+		amountMicro == null
+	) {
+		return null;
+	}
+
+	return {
+		id: item.betId,
+		betId: item.betId,
+		roundId: item.roundId,
+		roundNumber: item.roundNumber,
+		slotId: item.slotId,
+		amountMicro,
+		crashMultiplier:
+			typeof item.crashMultiplier === "number" ? item.crashMultiplier : 0,
+		cashoutMultiplier: item.cashoutMultiplier ?? null,
+		payoutMicro,
+		result: item.result === "WIN" ? "WIN" : "LOSS",
+	};
 }
 
 function phaseToState(phase: string | undefined) {
@@ -153,6 +202,26 @@ export function useLempiSocket(): {
 
 	useEffect(() => {
 		if (!token) return;
+		let cancelled = false;
+		void apiRequest<LempiHistoryResponse>("/v1/session/history?limit=40")
+			.then((history) => {
+				if (cancelled) return;
+				const entries = (history.items ?? [])
+					.map(historyItemToEntry)
+					.filter((entry): entry is LempiBetHistoryEntry => entry != null)
+					.reverse();
+				useLempiStore.getState().hydrateBetHistory(entries);
+			})
+			.catch(() => {
+				if (!cancelled) emitNotice("No se pudo cargar el historial");
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [token]);
+
+	useEffect(() => {
+		if (!token) return;
 		const socketOptions = {
 			auth: { token },
 			transports: ["websocket", "polling"],
@@ -199,7 +268,9 @@ export function useLempiSocket(): {
 			emitNotice(`Error del servidor: ${message || "intenta de nuevo"}`);
 		});
 		socket.on("disconnect", (reason) => {
-			useLempiStore.getState().setConnected(false);
+			const store = useLempiStore.getState();
+			store.setConnected(false);
+			store.setPresence(0);
 			if (reason !== "io client disconnect") {
 				emitNotice("Conexion perdida con el servidor");
 			}
@@ -271,6 +342,12 @@ export function useLempiSocket(): {
 			if (typeof data.multiplier === "number") {
 				useLempiStore.getState().setMultiplier(data.multiplier);
 			}
+		});
+
+		socket.on("presence_update", (data: { connectedPlayerCount?: number }) => {
+			useLempiStore
+				.getState()
+				.setPresence(Math.max(0, data.connectedPlayerCount ?? 0));
 		});
 
 		socket.on(
@@ -357,6 +434,7 @@ export function useLempiSocket(): {
 						const won = slot.status === "CASHED_OUT";
 						return {
 							id: `${s.roundId ?? "round"}-${slot.betId}`,
+							betId: slot.betId,
 							roundId: s.roundId ?? "",
 							roundNumber: s.roundNumber,
 							slotId,
@@ -397,7 +475,9 @@ export function useLempiSocket(): {
 			stopCountdown();
 			socket.disconnect();
 			socketRef.current = null;
-			useLempiStore.getState().setConnected(false);
+			const store = useLempiStore.getState();
+			store.setConnected(false);
+			store.setPresence(0);
 		};
 	}, [token]);
 

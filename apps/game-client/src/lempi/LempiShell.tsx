@@ -13,6 +13,7 @@ export const LempiShell: React.FC = () => {
 	const balanceMicro = useLempiStore((s) => s.balanceMicro);
 	const toasts = useLempiStore((s) => s.toasts);
 	const poolPlayers = useLempiStore((s) => s.poolPlayers);
+	const connectedPlayerCount = useLempiStore((s) => s.connectedPlayerCount);
 	const acceptedCount = useLempiStore((s) => s.acceptedCount);
 	const cashedOutCount = useLempiStore((s) => s.cashedOutCount);
 	const totalWinMicro = useLempiStore((s) => s.totalWinMicro);
@@ -61,6 +62,10 @@ export const LempiShell: React.FC = () => {
 					{poolTab === "table" ? (
 						<>
 							<div className="lempi-pool__summary">
+								<div>
+									<strong>{connectedPlayerCount}</strong>
+									<span>En linea</span>
+								</div>
 								<div>
 									<strong>
 										{cashedOutCount}/{acceptedCount}
@@ -128,7 +133,7 @@ export const LempiShell: React.FC = () => {
 				</aside>
 
 				<section className="lempi-stage">
-					<div className="lempi-stage__hud" aria-label="Estado del juego">
+					<div className="lempi-stage__hud">
 						<div className="lempi-stage__brand">
 							<strong className="lempi-stage__title">Lempi Crash</strong>
 							<span

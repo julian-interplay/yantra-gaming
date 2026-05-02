@@ -8,11 +8,31 @@ import { idempotency } from "../middleware/idempotency.js";
 import { ipAllowList } from "../middleware/ip-allow-list.js";
 import { operatorAuth } from "../middleware/operator-auth.js";
 import { sessionCreateRateLimit } from "../middleware/operator-rate-limit.js";
+import { sessionAuth } from "../middleware/session-auth.js";
 import { turnstileVerify } from "../middleware/turnstile.js";
 import { globalKillSwitch } from "../services/GlobalKillSwitch.js";
 import { sessionService } from "../services/SessionService.js";
 
 export const sessionRouter = Router();
+
+const SessionHistoryQuery = z.object({
+	cursor: z.string().uuid().optional(),
+	limit: z.coerce.number().int().min(1).max(100).default(40),
+});
+
+function asObject(value: unknown): Record<string, unknown> | null {
+	return typeof value === "object" && value !== null
+		? (value as Record<string, unknown>)
+		: null;
+}
+
+function asString(value: unknown): string | null {
+	return typeof value === "string" ? value : null;
+}
+
+function asNumber(value: unknown): number | null {
+	return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
 
 const CreateSessionBody = z.object({
 	requestUuid: z.string().uuid(),
@@ -194,6 +214,68 @@ sessionRouter.post(
 		res.status(201).json(created);
 	},
 );
+
+sessionRouter.get("/history", sessionAuth, async (req, res) => {
+	const parsed = SessionHistoryQuery.safeParse(req.query);
+	if (!parsed.success) {
+		res
+			.status(400)
+			.json({ error: "invalid_query", details: parsed.error.flatten() });
+		return;
+	}
+	if (!req.session) {
+		res.status(401).json({ error: "session_not_found" });
+		return;
+	}
+
+	const { cursor, limit } = parsed.data;
+	const bets = await prisma.bet.findMany({
+		where: {
+			operatorId: req.session.operatorId,
+			playerRef: req.session.playerRef,
+			selectionType: req.session.gameCode,
+			currency: req.session.currency,
+			status: { in: ["SETTLED", "FAILED"] },
+		},
+		orderBy: [{ placedAt: "desc" }, { id: "desc" }],
+		take: limit + 1,
+		...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+		include: { round: true },
+	});
+	const nextCursor = bets.length > limit ? (bets.pop()?.id ?? null) : null;
+
+	const items = bets.map((b) => {
+		const selection = asObject(b.selection);
+		const outcome = asObject(b.round.outcomeData);
+		const payoutMicro = b.cashoutPayoutMicro ?? b.wonAmountMicro ?? null;
+		const won =
+			b.won === true ||
+			b.cashoutPayoutMicro != null ||
+			(payoutMicro != null && payoutMicro > 0n);
+
+		return {
+			betId: b.id,
+			roundId: b.roundId,
+			roundNumber: b.round.nonce + 1,
+			placedAt: b.placedAt.toISOString(),
+			amountMicro: b.amountMicro.toString(),
+			currency: b.currency,
+			slotId: asString(selection?.slotId),
+			crashMultiplier: asNumber(outcome?.crashMultiplier),
+			cashoutMultiplier: b.cashoutMultiplier,
+			payoutMicro: won && payoutMicro != null ? payoutMicro.toString() : null,
+			result: won ? "WIN" : "LOSS",
+		};
+	});
+
+	res.json({
+		sessionId: req.session.id,
+		playerRef: req.session.playerRef,
+		nextCursor,
+		count: items.length,
+		items,
+	});
+});
 
 sessionRouter.get("/:id", operatorAuth, ipAllowList, async (req, res) => {
 	const s = await sessionService.getActive(

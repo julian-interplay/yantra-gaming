@@ -42,6 +42,7 @@ import {
 	cleanDb,
 	createFakeWallet,
 	type FakeWallet,
+	mintSessionToken,
 	type SeededOperator,
 	seedOperator,
 	signedHeaders,
@@ -109,6 +110,77 @@ async function seedGameConfig(
 	});
 }
 
+async function seedLempiGameConfig(
+	operatorId: string,
+	currency = "LKR",
+): Promise<void> {
+	await prisma.operatorGameConfig.create({
+		data: {
+			operatorId,
+			gameCode: "lempi-crash",
+			currency,
+			enabled: true,
+			configJson: {
+				houseEdge: 0.01,
+				maxMultiplier: 1000,
+				multiplierGrowthRate: 0.00011,
+				minFlightMs: 700,
+				maxFlightMs: 120_000,
+				botCashoutsEnabled: true,
+			},
+			configVersion: "v1",
+			minBetMicro: 10_000_000n,
+			maxBetMicro: 10_000_000_000n,
+			commissionMicro: 3_000n,
+			bettingWindowMs: 2_000,
+			rollingWindowMs: 500,
+			cooldownMs: 500,
+		},
+	});
+}
+
+async function createLempiSession(args: {
+	operatorId: string;
+	sessionId: string;
+	playerRef: string;
+	currency?: string;
+}): Promise<void> {
+	await prisma.gameSession.create({
+		data: {
+			id: args.sessionId,
+			operatorId: args.operatorId,
+			playerRef: args.playerRef,
+			gameCode: "lempi-crash",
+			currency: args.currency ?? "LKR",
+			lang: "es",
+			jurisdiction: "INTL",
+			serverSeed: `server-${args.sessionId}`,
+			serverSeedHash: `hash-${args.sessionId}`,
+			clientSeed: `client-${args.sessionId}`,
+			expiresAt: new Date(Date.now() + 3_600_000),
+		},
+	});
+}
+
+function waitForPresence(
+	socket: ClientSocket,
+	expected: number,
+): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(
+			() => reject(new Error(`presence ${expected} timeout`)),
+			3_000,
+		);
+		const handler = (payload: { connectedPlayerCount?: number }) => {
+			if (payload.connectedPlayerCount !== expected) return;
+			clearTimeout(timeout);
+			socket.off("presence_update", handler);
+			resolve();
+		};
+		socket.on("presence_update", handler);
+	});
+}
+
 describeMaybe(
 	"e2e: operator launches session, player bets, round settles",
 	() => {
@@ -128,6 +200,7 @@ describeMaybe(
 		});
 
 		beforeEach(async () => {
+			await getEngineRegistry().stopAll();
 			await cleanDb();
 			fake.resetHits();
 			operator = await seedOperator({ walletCallbackUrl: fake.url });
@@ -206,5 +279,58 @@ describeMaybe(
 			socket.off("round_state", onRoundState);
 			socket.disconnect();
 		}, 30_000);
+
+		it("emits unique connected-player presence for Lempi", async () => {
+			await seedLempiGameConfig(operator.operatorId);
+
+			const launchA = mintSessionToken(operator.operatorId, "presence-a", {
+				gameCode: "lempi-crash",
+				currency: "LKR",
+				lang: "es",
+			});
+			const launchB = mintSessionToken(operator.operatorId, "presence-b", {
+				gameCode: "lempi-crash",
+				currency: "LKR",
+				lang: "es",
+			});
+			await createLempiSession({
+				operatorId: operator.operatorId,
+				sessionId: launchA.sessionId,
+				playerRef: "presence-a",
+			});
+			await createLempiSession({
+				operatorId: operator.operatorId,
+				sessionId: launchB.sessionId,
+				playerRef: "presence-b",
+			});
+
+			const socketA: ClientSocket = ioClient(rgs.baseUrl, {
+				auth: { token: launchA.token },
+				transports: ["websocket"],
+				forceNew: true,
+			});
+			await waitForPresence(socketA, 1);
+
+			const duplicateA: ClientSocket = ioClient(rgs.baseUrl, {
+				auth: { token: launchA.token },
+				transports: ["websocket"],
+				forceNew: true,
+			});
+			await waitForPresence(duplicateA, 1);
+
+			const socketB: ClientSocket = ioClient(rgs.baseUrl, {
+				auth: { token: launchB.token },
+				transports: ["websocket"],
+				forceNew: true,
+			});
+			await waitForPresence(socketB, 2);
+
+			const decremented = waitForPresence(socketA, 1);
+			socketB.disconnect();
+			await decremented;
+
+			socketA.disconnect();
+			duplicateA.disconnect();
+		}, 10_000);
 	},
 );

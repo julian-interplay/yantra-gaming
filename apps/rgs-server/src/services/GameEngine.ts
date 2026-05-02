@@ -325,7 +325,6 @@ export class GameEngine {
 		});
 
 		let lastTickAt = 0;
-		let nextBotCashoutAt = 900;
 		while (this.running && this.active?.phase === "ROLLING") {
 			const elapsedMs = Date.now() - this.active.phaseStartedAt;
 			if (elapsedMs >= crashAtMs) break;
@@ -338,30 +337,6 @@ export class GameEngine {
 					multiplier,
 					elapsedMs,
 				});
-			}
-			const botEnabled = (this.gameConfig as { botCashoutsEnabled?: unknown })
-				.botCashoutsEnabled;
-			if (
-				botEnabled === true &&
-				elapsedMs >= nextBotCashoutAt &&
-				multiplier < outcome.crashMultiplier
-			) {
-				const winMicro = BigInt(
-					100_000 + Math.floor(Math.random() * 4_000_000),
-				);
-				this.emit("player_cashout", {
-					roundId: this.active.id,
-					betId: `bot-${this.active.id}-${elapsedMs}`,
-					slotId: null,
-					playerRef: this.maskPlayerRef(
-						`HN${Math.floor(100000 + Math.random() * 899999)}`,
-					),
-					cashoutMode: "BOT",
-					cashoutMultiplier: multiplier,
-					payoutMicro: winMicro.toString(),
-					elapsedMs,
-				});
-				nextBotCashoutAt += 650 + Math.floor(Math.random() * 1200);
 			}
 			await this.processAutoCashouts(multiplier);
 			await this.wait(50);

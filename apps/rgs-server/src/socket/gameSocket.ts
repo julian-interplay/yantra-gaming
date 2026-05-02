@@ -36,9 +36,49 @@ const PlaceBetEnvelopeSchema = z.object({
 });
 
 const INITIAL_BALANCE_RETRY_DELAYS_MS = [0, 750, 2000] as const;
+const presenceByRoom = new Map<string, Map<string, number>>();
 
 function wait(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function gameRoom(
+	operatorId: string,
+	gameCode: string,
+	currency: string,
+): string {
+	return `operator:${operatorId}:${gameCode}:${currency}`;
+}
+
+function connectedPlayerCount(room: string): number {
+	return presenceByRoom.get(room)?.size ?? 0;
+}
+
+function incrementPresence(room: string, sessionId: string): number {
+	const sessions = presenceByRoom.get(room) ?? new Map<string, number>();
+	sessions.set(sessionId, (sessions.get(sessionId) ?? 0) + 1);
+	presenceByRoom.set(room, sessions);
+	return sessions.size;
+}
+
+function decrementPresence(room: string, sessionId: string): number {
+	const sessions = presenceByRoom.get(room);
+	if (!sessions) return 0;
+	const next = (sessions.get(sessionId) ?? 0) - 1;
+	if (next > 0) {
+		sessions.set(sessionId, next);
+		return sessions.size;
+	}
+	sessions.delete(sessionId);
+	const count = sessions.size;
+	if (count === 0) presenceByRoom.delete(room);
+	return count;
+}
+
+function emitPresence(io: SocketIOServer, room: string): void {
+	io.to(room).emit("presence_update", {
+		connectedPlayerCount: connectedPlayerCount(room),
+	});
 }
 
 export function attachGameSocket(io: SocketIOServer): void {
@@ -76,9 +116,10 @@ export function attachGameSocket(io: SocketIOServer): void {
 		const socket = rawSocket as AuthedSocket;
 		const { sessionId, operatorId, gameCode, currency, playerRef } =
 			socket.data;
+		const room = gameRoom(operatorId, gameCode, currency);
 
 		socket.join(`session:${sessionId}`);
-		socket.join(`operator:${operatorId}:${gameCode}:${currency}`);
+		socket.join(room);
 
 		const registry = getEngineRegistry();
 		const engine = await registry.forSession({
@@ -91,6 +132,9 @@ export function attachGameSocket(io: SocketIOServer): void {
 			socket.disconnect(true);
 			return;
 		}
+
+		incrementPresence(room, sessionId);
+		emitPresence(io, room);
 
 		socket.emit("connected", {
 			sessionId,
@@ -228,7 +272,8 @@ export function attachGameSocket(io: SocketIOServer): void {
 		);
 
 		socket.on("disconnect", () => {
-			// no-op — sessions are durable; reconnect with same token.
+			decrementPresence(room, sessionId);
+			emitPresence(io, room);
 		});
 	});
 }

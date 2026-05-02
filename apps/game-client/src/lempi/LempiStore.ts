@@ -41,6 +41,7 @@ export interface LempiPoolPlayer {
 
 export interface LempiBetHistoryEntry {
 	id: string;
+	betId: string;
 	roundId: string;
 	roundNumber: number;
 	slotId: LempiSlotId;
@@ -68,6 +69,7 @@ export interface LempiState {
 	toasts: LempiToast[];
 	poolPlayers: LempiPoolPlayer[];
 	betHistory: LempiBetHistoryEntry[];
+	connectedPlayerCount: number;
 	acceptedCount: number;
 	cashedOutCount: number;
 	totalStakeMicro: bigint;
@@ -99,7 +101,9 @@ export interface LempiState {
 	setSlot: (slotId: LempiSlotId, patch: Partial<LempiBetSlot>) => void;
 	resetSlotsForRound: () => void;
 	addToast: (toast: Omit<LempiToast, "id">) => void;
+	hydrateBetHistory: (entries: LempiBetHistoryEntry[]) => void;
 	addBetHistory: (entries: LempiBetHistoryEntry[]) => void;
+	setPresence: (connectedPlayerCount: number) => void;
 	setPool: (payload: {
 		acceptedCount: number;
 		cashedOutCount: number;
@@ -107,6 +111,25 @@ export interface LempiState {
 		totalWinMicro: bigint;
 		players: LempiPoolPlayer[];
 	}) => void;
+}
+
+function mergeHistory(
+	current: LempiBetHistoryEntry[],
+	incoming: LempiBetHistoryEntry[],
+): LempiBetHistoryEntry[] {
+	const merged: LempiBetHistoryEntry[] = [];
+	const positions = new Map<string, number>();
+	for (const entry of [...current, ...incoming]) {
+		const key = entry.betId || entry.id;
+		const existing = positions.get(key);
+		if (existing != null) {
+			merged[existing] = entry;
+			continue;
+		}
+		positions.set(key, merged.length);
+		merged.push(entry);
+	}
+	return merged.slice(-40);
 }
 
 const makeSlot = (slotId: LempiSlotId): LempiBetSlot => ({
@@ -136,6 +159,7 @@ export const useLempiStore = create<LempiState>()((set) => ({
 	toasts: [],
 	poolPlayers: [],
 	betHistory: [],
+	connectedPlayerCount: 0,
 	acceptedCount: 0,
 	cashedOutCount: 0,
 	totalStakeMicro: 0n,
@@ -191,10 +215,15 @@ export const useLempiStore = create<LempiState>()((set) => ({
 				},
 			],
 		})),
+	hydrateBetHistory: (entries) =>
+		set((state) => ({
+			betHistory: mergeHistory(entries, state.betHistory),
+		})),
 	addBetHistory: (entries) =>
 		set((state) => ({
-			betHistory: [...state.betHistory, ...entries].slice(-40),
+			betHistory: mergeHistory(state.betHistory, entries),
 		})),
+	setPresence: (connectedPlayerCount) => set({ connectedPlayerCount }),
 	setPool: (payload) => set(payload),
 }));
 

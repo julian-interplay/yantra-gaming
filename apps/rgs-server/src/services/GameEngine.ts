@@ -636,15 +636,17 @@ export class GameEngine {
 			return { ok: false, reason: "session_expired" };
 		}
 
-		const previousBet = await prisma.bet.findFirst({
-			where: {
-				sessionId: params.sessionId,
-				roundId: { not: round.id },
-				status: { in: ["ACCEPTED", "SETTLED"] },
-			},
-			orderBy: { placedAt: "desc" },
-			select: { placedAt: true },
-		});
+		const previousBet = this.plugin.liveCrash
+			? null
+			: await prisma.bet.findFirst({
+					where: {
+						sessionId: params.sessionId,
+						roundId: { not: round.id },
+						status: { in: ["ACCEPTED", "SETTLED"] },
+					},
+					orderBy: { placedAt: "desc" },
+					select: { placedAt: true },
+				});
 		const rgCheck = await checkRGLimits({
 			session,
 			stakeMicro: amount,

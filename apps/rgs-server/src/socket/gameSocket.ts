@@ -8,6 +8,8 @@ import {
 } from "../middleware/session-auth.js";
 import { getEngineRegistry } from "../services/EngineRegistry.js";
 import { newUuid } from "../utils/uuid.js";
+import { RsStatus, type WalletResponse } from "../wallet/types.js";
+import type { WalletClient } from "../wallet/WalletClient.js";
 
 interface AuthedSocket extends Socket {
 	data: {
@@ -36,6 +38,19 @@ const PlaceBetEnvelopeSchema = z.object({
 });
 
 const presenceByRoom = new Map<string, Map<string, number>>();
+const INITIAL_BALANCE_MAX_ATTEMPTS = 3;
+const INITIAL_BALANCE_RETRY_DELAY_MS = 750;
+
+interface InitialBalanceFetchParams {
+	sessionId: string;
+	operatorId: string;
+	playerRef: string;
+	currency: string;
+	gameCode: string;
+	isConnected?: () => boolean;
+	maxAttempts?: number;
+	retryDelayMs?: number;
+}
 
 function gameRoom(
 	operatorId: string,
@@ -74,6 +89,53 @@ function emitPresence(io: SocketIOServer, room: string): void {
 	io.to(room).emit("presence_update", {
 		connectedPlayerCount: connectedPlayerCount(room),
 	});
+}
+
+export async function fetchInitialBalanceWithRetry(
+	walletClient: Pick<WalletClient, "balance">,
+	params: InitialBalanceFetchParams,
+): Promise<WalletResponse | null> {
+	const maxAttempts = params.maxAttempts ?? INITIAL_BALANCE_MAX_ATTEMPTS;
+	const retryDelayMs = params.retryDelayMs ?? INITIAL_BALANCE_RETRY_DELAY_MS;
+
+	for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+		if (params.isConnected && !params.isConnected()) return null;
+
+		const res = await walletClient.balance(
+			{
+				requestUuid: newUuid(),
+				operatorId: params.operatorId,
+				playerRef: params.playerRef,
+				currency: params.currency,
+				gameCode: params.gameCode,
+			},
+			{ sessionId: params.sessionId, attempt },
+		);
+		if (res.balanceMicro != null) return res;
+
+		if (!shouldRetryInitialBalance(res.status) || attempt >= maxAttempts) {
+			return res;
+		}
+
+		logger.warn("initial balance fetch retrying", {
+			sessionId: params.sessionId,
+			status: res.status,
+			message: res.message ?? null,
+			attempt,
+			maxAttempts,
+		});
+		await sleep(retryDelayMs);
+	}
+
+	return null;
+}
+
+function shouldRetryInitialBalance(status: WalletResponse["status"]): boolean {
+	return status === RsStatus.TIMEOUT || status === RsStatus.UNKNOWN;
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function attachGameSocket(io: SocketIOServer): void {
@@ -169,16 +231,18 @@ export function attachGameSocket(io: SocketIOServer): void {
 		// down so the UI has something to show before the first bet/win.
 		void (async () => {
 			try {
-				const res = await engine.getWalletClient().balance(
+				const res = await fetchInitialBalanceWithRetry(
+					engine.getWalletClient(),
 					{
-						requestUuid: newUuid(),
+						sessionId,
 						operatorId,
 						playerRef,
 						currency,
 						gameCode,
+						isConnected: () => socket.connected,
 					},
-					{ sessionId },
 				);
+				if (!res) return;
 				if (res.balanceMicro != null && socket.connected) {
 					socket.emit("balance_update", {
 						playerRef,

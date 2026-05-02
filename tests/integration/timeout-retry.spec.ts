@@ -16,10 +16,11 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test'
 
 import { prisma } from '../../apps/rgs-server/src/db.js';
 import { PendingJobRunner } from '../../apps/rgs-server/src/services/PendingJobRunner.js';
+import { fetchInitialBalanceWithRetry } from '../../apps/rgs-server/src/socket/gameSocket.js';
+import { newUuid } from '../../apps/rgs-server/src/utils/uuid.js';
 import { HttpWalletAdapter } from '../../apps/rgs-server/src/wallet/HttpWalletAdapter.js';
 import { WalletClient } from '../../apps/rgs-server/src/wallet/WalletClient.js';
 import { RsStatus } from '../../apps/rgs-server/src/wallet/types.js';
-import { newUuid } from '../../apps/rgs-server/src/utils/uuid.js';
 import {
   awaitJobCompletion,
   cleanDb,
@@ -69,6 +70,54 @@ describe('wallet timeout + retry', () => {
     client = new WalletClient(operator.operatorId, adapter);
 
     runner = new PendingJobRunner();
+  });
+
+  it('initial balance retries after a transient timeout before telling the client it is unavailable', async () => {
+    let attempts = 0;
+    fake.setHandler('balance', async (body) => {
+      attempts += 1;
+      if (attempts === 1) {
+        return {
+          status: 200,
+          delayMs: 1_500,
+          body: {
+            status: 'RS_OK',
+            requestUuid: body.requestUuid,
+            balanceMicro: '0',
+            currency: body.currency,
+          },
+        };
+      }
+      return {
+        status: 200,
+        body: {
+          status: 'RS_OK',
+          requestUuid: body.requestUuid,
+          balanceMicro: '10000000',
+          currency: body.currency,
+        },
+      };
+    });
+
+    const res = await fetchInitialBalanceWithRetry(client, {
+      sessionId: newUuid(),
+      operatorId: operator.operatorId,
+      playerRef,
+      currency,
+      gameCode: 'yantra',
+      maxAttempts: 2,
+      retryDelayMs: 1,
+    });
+
+    expect(res?.status).toBe(RsStatus.OK);
+    expect(res?.balanceMicro).toBe(10_000_000n);
+    expect(fake.hits('balance')).toBe(2);
+
+    const calls = await prisma.walletCall.findMany({
+      where: { endpoint: 'BALANCE', playerRef },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(calls.map((c) => c.attempt)).toEqual([1, 2]);
   });
 
   it('a win that times out is enqueued as a PendingWalletJob and settles when the wallet recovers', async () => {

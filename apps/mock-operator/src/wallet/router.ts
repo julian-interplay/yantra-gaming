@@ -1,4 +1,4 @@
-// POST /wallet/balance | /wallet/bet | /wallet/win | /wallet/rollback
+// POST /wallet/balance | /wallet/bet | /wallet/win | /wallet/award | /wallet/rollback
 //
 // Spec-conformant surface for the RGS's HttpWalletAdapter to talk to during
 // local development. Verifies inbound HMAC using MOCK_OPERATOR_WALLET_SECRET.
@@ -12,6 +12,7 @@ import {
   RsStatus,
   fromMicro,
   type BalanceRequestWire,
+  type AwardRequestWire,
   type BetRequestWire,
   type WinRequestWire,
   type RollbackRequestWire,
@@ -208,6 +209,54 @@ walletRouter.post('/win', (req, res) => {
   }
 
   const result = store.win(operatorId, body.playerRef, body.transactionUuid, amount);
+  if (result.status === RsStatus.OK) {
+    store.rememberRequest(body.requestUuid, result.balanceMicro);
+  }
+  const payload: WalletResponseWire = {
+    status: result.status,
+    requestUuid: body.requestUuid,
+    balanceMicro: result.balanceMicro.toString(),
+    currency: body.currency,
+  };
+  res.json(payload);
+});
+
+// Award — F2P prize credit with no referenced bet transaction.
+walletRouter.post('/award', (req, res) => {
+  if (!requireValidSignature(req, res)) return;
+  const body = req.body as AwardRequestWire;
+  if (
+    !body?.requestUuid ||
+    !body.transactionUuid ||
+    !body.playerRef ||
+    !body.currency ||
+    !body.amountMicro ||
+    !body.prizeRef
+  ) {
+    return sendError(req, res, RsStatus.WRONG_SYNTAX, 'missing required fields');
+  }
+  const store = getStore(config.operatorId);
+  const operatorId = body.operatorId ?? config.operatorId;
+
+  const prev = store.recallRequest(body.requestUuid);
+  if (prev !== undefined) {
+    const payload: WalletResponseWire = {
+      status: RsStatus.OK,
+      requestUuid: body.requestUuid,
+      balanceMicro: prev.toString(),
+      currency: body.currency,
+    };
+    return res.json(payload);
+  }
+
+  let amount: bigint;
+  try {
+    amount = BigInt(body.amountMicro);
+  } catch {
+    return sendError(req, res, RsStatus.WRONG_TYPES, 'amountMicro must be integer string');
+  }
+
+  const result = store.award(operatorId, body.playerRef, body.transactionUuid, amount);
   if (result.status === RsStatus.OK) {
     store.rememberRequest(body.requestUuid, result.balanceMicro);
   }

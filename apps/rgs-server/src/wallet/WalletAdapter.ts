@@ -1,5 +1,6 @@
 import type {
   BalanceRequest,
+  AwardRequest,
   BetRequest,
   RollbackRequest,
   WalletResponse,
@@ -30,5 +31,6 @@ export interface WalletAdapter {
   balance(req: BalanceRequest): Promise<WalletResponse>;
   bet(req: BetRequest): Promise<WalletResponse>;
   win(req: WinRequest): Promise<WalletResponse>;
+  award(req: AwardRequest): Promise<WalletResponse>;
   rollback(req: RollbackRequest): Promise<WalletResponse>;
 }

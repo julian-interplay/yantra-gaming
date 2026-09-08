@@ -8,6 +8,7 @@ import { signPayload } from '../utils/signing.js';
 import type { WalletAdapter } from './WalletAdapter.js';
 import {
   type BalanceRequest,
+  type AwardRequest,
   type BetRequest,
   type RollbackRequest,
   RsStatus,
@@ -23,7 +24,7 @@ export interface HttpWalletAdapterOptions {
   timeoutMs?: number;
 }
 
-type Endpoint = 'balance' | 'bet' | 'win' | 'rollback';
+type Endpoint = 'balance' | 'bet' | 'win' | 'award' | 'rollback';
 
 export class HttpWalletAdapter implements WalletAdapter {
   private readonly kid: string;
@@ -89,6 +90,22 @@ export class HttpWalletAdapter implements WalletAdapter {
       gameCode: req.gameCode,
       amountMicro: req.amountMicro.toString(),
       roundId: req.roundId,
+      meta: req.meta ?? {},
+    });
+  }
+
+  async award(req: AwardRequest): Promise<WalletResponse> {
+    return this.call('award', req.requestUuid, {
+      requestUuid: req.requestUuid,
+      transactionUuid: req.transactionUuid,
+      operatorId: req.operatorId,
+      playerRef: req.playerRef,
+      currency: req.currency,
+      gameCode: req.gameCode,
+      amountMicro: req.amountMicro.toString(),
+      prizeRef: req.prizeRef,
+      tournamentId: req.tournamentId,
+      rank: req.rank,
       meta: req.meta ?? {},
     });
   }

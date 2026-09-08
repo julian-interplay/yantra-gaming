@@ -200,6 +200,19 @@ export interface WinRequestWire
 	meta?: Record<string, unknown>;
 }
 
+export interface AwardRequestWire
+	extends WalletRequestCommon,
+		BonusAttribution,
+		FxContext {
+	transactionUuid: Uuid;
+	amountMicro: MicroAmountString;
+	/** Operator/RGS prize reference, e.g. `rps:<tournamentId>:rank:1`. */
+	prizeRef: string;
+	tournamentId?: Uuid;
+	rank?: number;
+	meta?: Record<string, unknown>;
+}
+
 export interface RollbackRequestWire extends WalletRequestCommon {
 	transactionUuid: Uuid;
 	referenceTransactionUuid: Uuid;

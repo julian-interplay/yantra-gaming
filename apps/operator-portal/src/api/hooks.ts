@@ -22,7 +22,7 @@ export interface QueryOptions {
 
 export function useQuery<T>(
   path: string,
-  query: Record<string, string | number | undefined> | undefined,
+  query: object | undefined,
   fallback: T | null,
   opts: QueryOptions = {},
 ): QueryResult<T> {
@@ -45,7 +45,7 @@ export function useQuery<T>(
     setError(null);
 
     apiRequest<T>(path, {
-      query,
+      query: query as Record<string, string | number | undefined> | undefined,
       signal: controller.signal,
     })
       .then((res) => {

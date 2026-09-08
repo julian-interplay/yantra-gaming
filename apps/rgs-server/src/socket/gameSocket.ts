@@ -7,6 +7,11 @@ import {
 	verifySessionTokenOrThrow,
 } from "../middleware/session-auth.js";
 import { getEngineRegistry } from "../services/EngineRegistry.js";
+import {
+	getRpsTournamentService,
+	RPS_GAME_CODE,
+	type RpsHand,
+} from "../services/RpsTournamentService.js";
 import { newUuid } from "../utils/uuid.js";
 import { RsStatus, type WalletResponse } from "../wallet/types.js";
 import type { WalletClient } from "../wallet/WalletClient.js";
@@ -177,6 +182,52 @@ export function attachGameSocket(io: SocketIOServer): void {
 
 		socket.join(`session:${sessionId}`);
 		socket.join(room);
+
+		if (gameCode === RPS_GAME_CODE) {
+			incrementPresence(room, sessionId);
+			emitPresence(io, room);
+			socket.emit("connected", {
+				sessionId,
+				gameCode,
+				currency,
+				currentPhase: "TOURNAMENT",
+				currentRoundId: null,
+			});
+			const rps = getRpsTournamentService();
+			await rps.registerSocket(socket, {
+				sessionId,
+				operatorId,
+				playerRef,
+				currency,
+				gameCode,
+			});
+			socket.on(
+				"rps_choice",
+				async (payload: unknown, ack?: (r: unknown) => void) => {
+					const parsed = z
+						.object({
+							matchId: z.string().uuid(),
+							choice: z.enum(["ROCK", "PAPER", "SCISSORS"]),
+						})
+						.safeParse(payload);
+					if (!parsed.success) {
+						ack?.({ ok: false, reason: "seleccion_invalida" });
+						return;
+					}
+					const result = await rps.submitChoice(
+						{ sessionId, operatorId, playerRef, currency, gameCode },
+						parsed.data.matchId,
+						parsed.data.choice as RpsHand,
+					);
+					ack?.(result);
+				},
+			);
+			socket.on("disconnect", () => {
+				decrementPresence(room, sessionId);
+				emitPresence(io, room);
+			});
+			return;
+		}
 
 		const registry = getEngineRegistry();
 		const engine = await registry.forSession({

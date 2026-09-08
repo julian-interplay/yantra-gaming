@@ -5,6 +5,7 @@ import Sidebar from './ui/Sidebar';
 import Login from './pages/Login';
 import Overview from './pages/Overview';
 import GameConfig from './pages/GameConfig';
+import RpsTournaments from './pages/RpsTournaments';
 import Rounds from './pages/Rounds';
 import RoundDetail from './pages/RoundDetail';
 import WalletCalls from './pages/WalletCalls';
@@ -46,6 +47,7 @@ export default function App() {
       >
         <Route path="/" element={<Overview />} />
         <Route path="/game-config" element={<GameConfig />} />
+        <Route path="/rps-tournaments" element={<RpsTournaments />} />
         <Route path="/rounds" element={<Rounds />} />
         <Route path="/rounds/:id" element={<RoundDetail />} />
         <Route path="/wallet-calls" element={<WalletCalls />} />

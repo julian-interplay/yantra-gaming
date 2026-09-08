@@ -1,6 +1,7 @@
 import type { WalletAdapter } from './WalletAdapter.js';
 import {
   type BalanceRequest,
+  type AwardRequest,
   type BetRequest,
   type RollbackRequest,
   RsStatus,
@@ -24,7 +25,7 @@ export interface InternalWalletSeed {
 
 export class InternalWalletAdapter implements WalletAdapter {
   private balances = new Map<string, { balance: bigint; currency: string }>();
-  private committedTxs = new Map<string, { kind: 'bet' | 'win' | 'rollback'; delta: bigint }>();
+  private committedTxs = new Map<string, { kind: 'bet' | 'win' | 'award' | 'rollback'; delta: bigint }>();
 
   constructor(seed: InternalWalletSeed[] = []) {
     for (const s of seed) this.seed(s);
@@ -109,6 +110,28 @@ export class InternalWalletAdapter implements WalletAdapter {
     const row = this.getOrCreate(req.operatorId, req.playerRef, req.currency);
     row.balance += req.amountMicro;
     this.committedTxs.set(req.transactionUuid, { kind: 'win', delta: req.amountMicro });
+    return {
+      status: RsStatus.OK,
+      requestUuid: req.requestUuid,
+      balanceMicro: row.balance,
+      currency: row.currency,
+    };
+  }
+
+  async award(req: AwardRequest): Promise<WalletResponse> {
+    const dup = this.committedTxs.get(req.transactionUuid);
+    if (dup) {
+      const row = this.getOrCreate(req.operatorId, req.playerRef, req.currency);
+      return {
+        status: RsStatus.DUPLICATE_TRANSACTION,
+        requestUuid: req.requestUuid,
+        balanceMicro: row.balance,
+        currency: row.currency,
+      };
+    }
+    const row = this.getOrCreate(req.operatorId, req.playerRef, req.currency);
+    row.balance += req.amountMicro;
+    this.committedTxs.set(req.transactionUuid, { kind: 'award', delta: req.amountMicro });
     return {
       status: RsStatus.OK,
       requestUuid: req.requestUuid,

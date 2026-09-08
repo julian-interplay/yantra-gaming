@@ -9,6 +9,11 @@ import {
 } from '../services/CredentialRotation.js';
 import { getEngineRegistry } from '../services/EngineRegistry.js';
 import {
+  getRpsTournamentService,
+  normalisePrizeTable,
+  RPS_CURRENCY,
+} from '../services/RpsTournamentService.js';
+import {
   beginMfaEnrollment,
   confirmMfaEnrollment,
   disableMfa,
@@ -157,6 +162,208 @@ adminRouter.get('/game-config', async (req, res) => {
       updatedAt: r.updatedAt.toISOString(),
     })),
   });
+});
+
+const PrizeRowSchema = z.object({
+  rank: z.number().int().min(1),
+  amountMicro: z.union([z.string(), z.number(), z.bigint()]).transform((v) => {
+    if (typeof v === 'bigint') return v.toString();
+    if (typeof v === 'number') return BigInt(Math.round(v)).toString();
+    return BigInt(v).toString();
+  }),
+});
+
+const RpsTournamentCreate = z.object({
+  title: z.string().min(1).max(140),
+  scheduledStartAt: z.string().datetime(),
+  minPlayers: z.number().int().min(2).default(2),
+  choiceWindowMs: z.number().int().min(3000).max(60000).default(12000),
+  roundBreakMs: z.number().int().min(0).max(30000).default(3000),
+  prizeTable: z.array(PrizeRowSchema).default([]),
+});
+
+const RpsTournamentPatch = RpsTournamentCreate.partial();
+
+function serialiseRpsTournament(t: {
+  id: string;
+  title: string;
+  currency: string;
+  status: string;
+  scheduledStartAt: Date;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  cancelledAt: Date | null;
+  cancelledReason: string | null;
+  minPlayers: number;
+  choiceWindowMs: number;
+  roundBreakMs: number;
+  prizeTable: unknown;
+  currentRound: number;
+  seedHash: string;
+  createdAt: Date;
+  updatedAt: Date;
+  participants?: Array<{ id: string; playerRef: string; displayName: string | null; status: string; rank: number | null; registeredAt: Date }>;
+  matches?: Array<{ id: string; roundNumber: number; attemptNumber: number; participantAId: string | null; participantBId: string | null; winnerId: string | null; status: string; resultReason: string | null; startsAt: Date; endsAt: Date; resolvedAt: Date | null }>;
+  prizeAwards?: Array<{ id: string; participantId: string; rank: number; amountMicro: bigint; currency: string; status: string; awardedAt: Date | null; lastError: string | null }>;
+}) {
+  return {
+    id: t.id,
+    title: t.title,
+    currency: t.currency,
+    status: t.status,
+    scheduledStartAt: t.scheduledStartAt.toISOString(),
+    startedAt: t.startedAt?.toISOString() ?? null,
+    completedAt: t.completedAt?.toISOString() ?? null,
+    cancelledAt: t.cancelledAt?.toISOString() ?? null,
+    cancelledReason: t.cancelledReason,
+    minPlayers: t.minPlayers,
+    choiceWindowMs: t.choiceWindowMs,
+    roundBreakMs: t.roundBreakMs,
+    prizeTable: normalisePrizeTable(t.prizeTable),
+    currentRound: t.currentRound,
+    seedHash: t.seedHash,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+    participantCount: t.participants?.length,
+    participants: t.participants?.map((p) => ({
+      id: p.id,
+      playerRef: p.displayName ?? `${p.playerRef.slice(0, 2)}***${p.playerRef.slice(-2)}`,
+      status: p.status,
+      rank: p.rank,
+      registeredAt: p.registeredAt.toISOString(),
+    })),
+    matches: t.matches?.map((m) => ({
+      id: m.id,
+      roundNumber: m.roundNumber,
+      attemptNumber: m.attemptNumber,
+      participantAId: m.participantAId,
+      participantBId: m.participantBId,
+      winnerId: m.winnerId,
+      status: m.status,
+      resultReason: m.resultReason,
+      startsAt: m.startsAt.toISOString(),
+      endsAt: m.endsAt.toISOString(),
+      resolvedAt: m.resolvedAt?.toISOString() ?? null,
+    })),
+    prizeAwards: t.prizeAwards?.map((a) => ({
+      id: a.id,
+      participantId: a.participantId,
+      rank: a.rank,
+      amountMicro: a.amountMicro.toString(),
+      currency: a.currency,
+      status: a.status,
+      awardedAt: a.awardedAt?.toISOString() ?? null,
+      lastError: a.lastError,
+    })),
+  };
+}
+
+adminRouter.get('/rps-tournaments', async (req, res) => {
+  const rows = await prisma.rpsTournament.findMany({
+    where: { operatorId: operatorId(req), currency: RPS_CURRENCY },
+    orderBy: [{ scheduledStartAt: 'desc' }],
+    take: 100,
+    include: { participants: true },
+  });
+  res.json({ items: rows.map(serialiseRpsTournament) });
+});
+
+adminRouter.post('/rps-tournaments', requireOperatorAdmin, async (req, res) => {
+  const parsed = RpsTournamentCreate.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'invalid_body', details: parsed.error.flatten() });
+    return;
+  }
+  const t = await getRpsTournamentService().createTournament({
+    operatorId: operatorId(req),
+    title: parsed.data.title,
+    scheduledStartAt: new Date(parsed.data.scheduledStartAt),
+    minPlayers: parsed.data.minPlayers,
+    choiceWindowMs: parsed.data.choiceWindowMs,
+    roundBreakMs: parsed.data.roundBreakMs,
+    prizeTable: parsed.data.prizeTable,
+    actor: req.portalClaims?.email,
+  });
+  res.status(201).json({ tournament: serialiseRpsTournament(t) });
+});
+
+adminRouter.get('/rps-tournaments/:id', async (req, res) => {
+  const t = await prisma.rpsTournament.findUnique({
+    where: { id: req.params.id as string },
+    include: {
+      participants: { orderBy: [{ rank: 'asc' }, { registeredAt: 'asc' }] },
+      matches: { orderBy: [{ roundNumber: 'asc' }, { createdAt: 'asc' }] },
+      prizeAwards: { orderBy: { rank: 'asc' } },
+    },
+  });
+  if (!t || t.operatorId !== operatorId(req)) {
+    res.status(404).json({ error: 'tournament_not_found' });
+    return;
+  }
+  res.json({ tournament: serialiseRpsTournament(t) });
+});
+
+adminRouter.patch('/rps-tournaments/:id', requireOperatorAdmin, async (req, res) => {
+  const parsed = RpsTournamentPatch.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'invalid_body', details: parsed.error.flatten() });
+    return;
+  }
+  const existing = await prisma.rpsTournament.findUnique({ where: { id: req.params.id as string } });
+  if (!existing || existing.operatorId !== operatorId(req)) {
+    res.status(404).json({ error: 'tournament_not_found' });
+    return;
+  }
+  if (!['DRAFT', 'SCHEDULED', 'REGISTERING'].includes(existing.status)) {
+    res.status(409).json({ error: 'tournament_locked' });
+    return;
+  }
+  const patch = parsed.data;
+  const updated = await prisma.rpsTournament.update({
+    where: { id: existing.id },
+    data: {
+      ...(patch.title !== undefined && { title: patch.title }),
+      ...(patch.scheduledStartAt !== undefined && { scheduledStartAt: new Date(patch.scheduledStartAt) }),
+      ...(patch.minPlayers !== undefined && { minPlayers: patch.minPlayers }),
+      ...(patch.choiceWindowMs !== undefined && { choiceWindowMs: patch.choiceWindowMs }),
+      ...(patch.roundBreakMs !== undefined && { roundBreakMs: patch.roundBreakMs }),
+      ...(patch.prizeTable !== undefined && { prizeTable: patch.prizeTable as object }),
+      updatedBy: req.portalClaims?.email ?? null,
+    },
+  });
+  res.json({ tournament: serialiseRpsTournament(updated) });
+});
+
+adminRouter.post('/rps-tournaments/:id/start', requireOperatorAdmin, async (req, res) => {
+  const result = await getRpsTournamentService().manualStart(
+    req.params.id as string,
+    operatorId(req),
+    req.portalClaims?.email,
+  );
+  if (!result.ok) {
+    res.status(result.reason === 'not_found' ? 404 : 409).json({ error: result.reason });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+adminRouter.post('/rps-tournaments/:id/cancel', requireOperatorAdmin, async (req, res) => {
+  const body = z.object({ reason: z.string().max(256).default('operator_cancelled') }).safeParse(req.body ?? {});
+  if (!body.success) {
+    res.status(400).json({ error: 'invalid_body', details: body.error.flatten() });
+    return;
+  }
+  const result = await getRpsTournamentService().cancel(
+    req.params.id as string,
+    operatorId(req),
+    body.data.reason,
+    req.portalClaims?.email,
+  );
+  if (!result.ok) {
+    res.status(result.reason === 'not_found' ? 404 : 409).json({ error: result.reason });
+    return;
+  }
+  res.json({ ok: true });
 });
 
 const UpdateConfigBody = z.object({

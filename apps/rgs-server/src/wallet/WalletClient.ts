@@ -16,6 +16,7 @@ import { CircuitBreaker, type CircuitState } from './CircuitBreaker.js';
 import type { WalletAdapter } from './WalletAdapter.js';
 import {
   type BalanceRequest,
+  type AwardRequest,
   type BetRequest,
   isRejectStatus,
   type RollbackRequest,
@@ -86,6 +87,13 @@ export class WalletClient {
     });
   }
 
+  async award(req: AwardRequest, audit: AuditContext = {}): Promise<WalletResponse> {
+    return this.invoke('AWARD', req, audit, () => this.adapter.award(req), {
+      transactionUuid: req.transactionUuid,
+      amountMicro: req.amountMicro,
+    });
+  }
+
   async rollback(req: RollbackRequest, audit: AuditContext = {}): Promise<WalletResponse> {
     return this.invoke('ROLLBACK', req, audit, () => this.adapter.rollback(req), {
       transactionUuid: req.transactionUuid,
@@ -95,8 +103,8 @@ export class WalletClient {
   }
 
   private async invoke(
-    endpoint: 'BALANCE' | 'BET' | 'WIN' | 'ROLLBACK',
-    req: BalanceRequest | BetRequest | WinRequest | RollbackRequest,
+    endpoint: 'BALANCE' | 'BET' | 'WIN' | 'AWARD' | 'ROLLBACK',
+    req: BalanceRequest | BetRequest | WinRequest | AwardRequest | RollbackRequest,
     audit: AuditContext,
     run: () => Promise<WalletResponse>,
     extra?: {

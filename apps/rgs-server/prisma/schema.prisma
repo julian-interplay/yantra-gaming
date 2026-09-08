@@ -53,6 +53,11 @@ model Operator {
   rounds              Round[]
   bets                Bet[]
   walletCalls         WalletCall[]
+  rpsTournaments      RpsTournament[]
+  rpsParticipants     RpsParticipant[]
+  rpsMatches          RpsMatch[]
+  rpsPrizeAwards      RpsPrizeAward[]
+  rpsAuditEvents      RpsAuditEvent[]
   portalUsers         OperatorUser[]
   webhookSubscriptions WebhookSubscription[]
   webhookDeliveries   WebhookDelivery[]
@@ -303,6 +308,7 @@ model GameSession {
   operator       Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   rounds         Round[]
   walletCalls    WalletCall[]
+  rpsParticipants RpsParticipant[]
 
   @@index([operatorId, playerRef])
   @@index([expiresAt])
@@ -312,6 +318,196 @@ model GameSession {
 enum SessionMode {
   REAL
   DEMO
+}
+
+// ─── RPS tournament game (F2P, HNL prize awards) ─────────
+
+model RpsTournament {
+  id               String              @id @default(uuid()) @db.Uuid
+  operatorId       String              @map("operator_id") @db.Uuid
+  title            String              @db.VarChar(140)
+  currency         String              @default("HNL") @db.VarChar(8)
+  status           RpsTournamentStatus @default(DRAFT)
+  scheduledStartAt DateTime            @map("scheduled_start_at")
+  startedAt        DateTime?           @map("started_at")
+  completedAt      DateTime?           @map("completed_at")
+  cancelledAt      DateTime?           @map("cancelled_at")
+  cancelledReason  String?             @map("cancelled_reason") @db.VarChar(256)
+  minPlayers       Int                 @default(2) @map("min_players")
+  choiceWindowMs   Int                 @default(12000) @map("choice_window_ms")
+  roundBreakMs     Int                 @default(3000) @map("round_break_ms")
+  prizeTable       Json                @default("[]") @map("prize_table")
+  seed             String              @db.VarChar(128)
+  seedHash         String              @map("seed_hash") @db.VarChar(128)
+  currentRound     Int                 @default(0) @map("current_round")
+  createdBy        String?             @map("created_by") @db.VarChar(254)
+  updatedBy        String?             @map("updated_by") @db.VarChar(254)
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  operator         Operator            @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  participants     RpsParticipant[]
+  matches          RpsMatch[]
+  prizeAwards      RpsPrizeAward[]
+  auditEvents      RpsAuditEvent[]
+
+  @@index([operatorId, status, scheduledStartAt])
+  @@index([currency])
+  @@map("rps_tournaments")
+}
+
+enum RpsTournamentStatus {
+  DRAFT
+  SCHEDULED
+  REGISTERING
+  RUNNING
+  SETTLING
+  COMPLETED
+  CANCELLED
+}
+
+model RpsParticipant {
+  id             String               @id @default(uuid()) @db.Uuid
+  operatorId     String               @map("operator_id") @db.Uuid
+  tournamentId   String               @map("tournament_id") @db.Uuid
+  sessionId      String?              @map("session_id") @db.Uuid
+  playerRef      String               @map("player_ref") @db.VarChar(128)
+  displayName    String?              @map("display_name") @db.VarChar(80)
+  status         RpsParticipantStatus @default(REGISTERED)
+  rank           Int?
+  eliminatedAt   DateTime?            @map("eliminated_at")
+  registeredAt   DateTime             @default(now()) @map("registered_at")
+  lastSeenAt     DateTime?            @map("last_seen_at")
+
+  operator       Operator             @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  tournament     RpsTournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  session        GameSession?         @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  choices        RpsChoice[]
+  prizeAwards    RpsPrizeAward[]
+  matchesA       RpsMatch[]           @relation("RpsMatchParticipantA")
+  matchesB       RpsMatch[]           @relation("RpsMatchParticipantB")
+  wins           RpsMatch[]           @relation("RpsMatchWinner")
+
+  @@unique([tournamentId, playerRef])
+  @@index([operatorId, playerRef])
+  @@index([sessionId])
+  @@index([tournamentId, status])
+  @@map("rps_participants")
+}
+
+enum RpsParticipantStatus {
+  REGISTERED
+  ACTIVE
+  ELIMINATED
+  WINNER
+}
+
+model RpsMatch {
+  id             String         @id @default(uuid()) @db.Uuid
+  operatorId     String         @map("operator_id") @db.Uuid
+  tournamentId   String         @map("tournament_id") @db.Uuid
+  roundNumber    Int            @map("round_number")
+  attemptNumber  Int            @default(1) @map("attempt_number")
+  participantAId String?        @map("participant_a_id") @db.Uuid
+  participantBId String?        @map("participant_b_id") @db.Uuid
+  winnerId       String?        @map("winner_id") @db.Uuid
+  status         RpsMatchStatus @default(PENDING)
+  resultReason   String?        @map("result_reason") @db.VarChar(32)
+  startsAt       DateTime       @map("starts_at")
+  endsAt         DateTime       @map("ends_at")
+  resolvedAt     DateTime?      @map("resolved_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  operator       Operator       @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  tournament     RpsTournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  participantA   RpsParticipant? @relation("RpsMatchParticipantA", fields: [participantAId], references: [id], onDelete: SetNull)
+  participantB   RpsParticipant? @relation("RpsMatchParticipantB", fields: [participantBId], references: [id], onDelete: SetNull)
+  winner         RpsParticipant? @relation("RpsMatchWinner", fields: [winnerId], references: [id], onDelete: SetNull)
+  choices        RpsChoice[]
+
+  @@index([operatorId, tournamentId, roundNumber])
+  @@index([status, endsAt])
+  @@map("rps_matches")
+}
+
+enum RpsMatchStatus {
+  PENDING
+  OPEN
+  RESOLVED
+  TIED
+  BYE
+}
+
+model RpsChoice {
+  id            String          @id @default(uuid()) @db.Uuid
+  matchId       String          @map("match_id") @db.Uuid
+  participantId String          @map("participant_id") @db.Uuid
+  choice        RpsHand
+  submittedAt   DateTime        @default(now()) @map("submitted_at")
+
+  match         RpsMatch        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  participant   RpsParticipant  @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, participantId])
+  @@index([participantId])
+  @@map("rps_choices")
+}
+
+enum RpsHand {
+  ROCK
+  PAPER
+  SCISSORS
+}
+
+model RpsPrizeAward {
+  id              String          @id @default(uuid()) @db.Uuid
+  operatorId      String          @map("operator_id") @db.Uuid
+  tournamentId    String          @map("tournament_id") @db.Uuid
+  participantId   String          @map("participant_id") @db.Uuid
+  playerRef       String          @map("player_ref") @db.VarChar(128)
+  rank            Int
+  prizeRef        String          @map("prize_ref") @db.VarChar(80)
+  amountMicro     BigInt          @map("amount_micro")
+  currency        String          @default("HNL") @db.VarChar(8)
+  status          RpsAwardStatus  @default(PENDING)
+  requestUuid     String?         @map("request_uuid") @db.Uuid
+  transactionUuid String?         @map("transaction_uuid") @db.Uuid
+  awardedAt       DateTime?       @map("awarded_at")
+  lastError       String?         @map("last_error") @db.VarChar(256)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  operator        Operator        @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  tournament      RpsTournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  participant     RpsParticipant  @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, rank])
+  @@index([operatorId, status])
+  @@index([transactionUuid])
+  @@map("rps_prize_awards")
+}
+
+enum RpsAwardStatus {
+  PENDING
+  AWARDED
+  FAILED
+}
+
+model RpsAuditEvent {
+  id           String        @id @default(uuid()) @db.Uuid
+  operatorId   String        @map("operator_id") @db.Uuid
+  tournamentId String        @map("tournament_id") @db.Uuid
+  actor         String?       @db.VarChar(254)
+  eventType     String        @map("event_type") @db.VarChar(64)
+  data          Json          @default("{}")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  operator      Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  tournament    RpsTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@index([operatorId, createdAt])
+  @@index([tournamentId])
+  @@map("rps_audit_events")
 }
 
 // ─── Round (one per spin) ───────────────────────────────
@@ -553,6 +749,7 @@ enum WalletEndpoint {
   BALANCE
   BET
   WIN
+  AWARD
   ROLLBACK
   END_ROUND
 }

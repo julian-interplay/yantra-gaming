@@ -69,6 +69,15 @@ export interface WinRequest extends WalletCommon {
   meta?: Record<string, unknown>;
 }
 
+export interface AwardRequest extends WalletCommon {
+  transactionUuid: Uuid;
+  amountMicro: bigint;
+  prizeRef: string;
+  tournamentId?: Uuid;
+  rank?: number;
+  meta?: Record<string, unknown>;
+}
+
 export interface RollbackRequest extends WalletCommon {
   transactionUuid: Uuid;                // new rollback tx id
   referenceTransactionUuid: Uuid;       // the bet or win being reversed

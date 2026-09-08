@@ -6,6 +6,7 @@ import { HttpWalletAdapter } from '../wallet/HttpWalletAdapter.js';
 import { WalletClient } from '../wallet/WalletClient.js';
 import {
   type BalanceRequest,
+  type AwardRequest,
   type BetRequest,
   type RollbackRequest,
   isSuccessOrDuplicate,
@@ -21,6 +22,9 @@ interface JobPayload {
   gameCode: string;
   amountMicro?: string;
   roundId?: string;
+  tournamentId?: string;
+  prizeRef?: string;
+  rank?: number;
 }
 
 const POLL_INTERVAL_MS = 5000;
@@ -140,6 +144,17 @@ export class PendingJobRunner {
           roundId: payload.roundId,
         };
         const res = await client.bet(req, { roundId: job.roundId ?? undefined, attempt: job.attempts + 1 });
+        status = res.status;
+      } else if (job.endpoint === 'AWARD' && payload.amountMicro && payload.prizeRef) {
+        const req: AwardRequest = {
+          ...common,
+          transactionUuid: payload.transactionUuid,
+          amountMicro: BigInt(payload.amountMicro),
+          prizeRef: payload.prizeRef,
+          tournamentId: payload.tournamentId,
+          rank: payload.rank,
+        };
+        const res = await client.award(req, { attempt: job.attempts + 1 });
         status = res.status;
       } else if (job.endpoint === 'BALANCE') {
         const req: BalanceRequest = common;

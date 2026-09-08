@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 const nav = [
   { to: '/', label: 'Overview', end: true },
   { to: '/game-config', label: 'Game config' },
+  { to: '/rps-tournaments', label: 'RPS tournaments' },
   { to: '/rounds', label: 'Rounds' },
   { to: '/wallet-calls', label: 'Wallet calls' },
   { to: '/sessions', label: 'Sessions' },

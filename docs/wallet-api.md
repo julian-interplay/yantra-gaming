@@ -1,7 +1,7 @@
 # Wallet Callback API
 
-The canonical specification for the four HTTP endpoints the operator implements and
-the RGS calls on every money-moving event. All four are POST, JSON, HMAC-SHA256 signed,
+The canonical specification for the HTTP endpoints the operator implements and
+the RGS calls on every money-moving event. All endpoints are POST, JSON, HMAC-SHA256 signed,
 and idempotent on `requestUuid`. Types are defined in
 `packages/wallet-spec/src/index.ts`; this document must stay in sync with that file.
 
@@ -14,6 +14,7 @@ and idempotent on `requestUuid`. Types are defined in
 - [POST /wallet/balance](#post-walletbalance)
 - [POST /wallet/bet](#post-walletbet)
 - [POST /wallet/win](#post-walletwin)
+- [POST /wallet/award](#post-walletaward)
 - [POST /wallet/rollback](#post-walletrollback)
 - [Retry and rollback rules](#retry-and-rollback-rules)
 - [Error codes](#error-codes)
@@ -33,13 +34,14 @@ Yantra Engine ─────────────── HTTPS ────�
              (signed, idempotent, retried)
 ```
 
-Four endpoints under the operator-owned base URL (e.g. `https://casino.example.com/wallet`):
+Endpoints under the operator-owned base URL (e.g. `https://casino.example.com/wallet`):
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | POST | `/wallet/balance` | Read player balance, no ledger effect |
 | POST | `/wallet/bet`     | Debit stake |
 | POST | `/wallet/win`     | Credit payout, referencing a previous bet |
+| POST | `/wallet/award`   | Credit a free-to-play prize with no prior bet |
 | POST | `/wallet/rollback` | Reverse a previous bet or win |
 
 All four share a common request envelope:
@@ -453,6 +455,50 @@ const result = await yantra.wallet.win({
   `amountMicro: "0"`. A losing bet generates **no** win call at all.
 - Win amount is gross payout (stake × payoutMultiplier) minus any commission the
   operator has configured; see the per-game PAR sheet (e.g. [games/ketapola-dice/docs/par-sheet.md](../games/ketapola-dice/docs/par-sheet.md)).
+
+---
+
+## POST /wallet/award
+
+Credit a promotional or free-to-play prize that does not reference a previous
+bet debit. The first use is `rps-tournament`, where entry is free and configured
+HNL prizes are awarded by final rank.
+
+### Request
+
+```ts
+interface AwardRequestWire {
+  requestUuid:     string;
+  transactionUuid: string;  // NEW, unique id for this prize movement
+  operatorId:      string;
+  playerRef:       string;
+  currency:        string;
+  gameCode:        string;
+  amountMicro:     string;  // stringified integer micro-units
+  prizeRef:        string;  // e.g. "rps:<tournamentId>:rank:1"
+  tournamentId?:   string;
+  rank?:           number;
+  meta?:           Record<string, unknown>;
+}
+```
+
+### Response
+
+```json
+{
+  "status": "RS_OK",
+  "requestUuid": "<echo>",
+  "balanceMicro": "50100000000",
+  "currency": "HNL"
+}
+```
+
+### Notes
+
+- `transactionUuid` is idempotent exactly like `/wallet/win`.
+- `prizeRef` is stable campaign/accounting metadata and should be stored in the
+  operator ledger.
+- Award failures are retried through the same pending wallet job queue as wins.
 
 ---
 

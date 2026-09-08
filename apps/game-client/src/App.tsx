@@ -12,6 +12,7 @@ import {
 	sendSessionEnded,
 } from "./iframe/parentMessaging";
 import { LempiShell } from "./lempi/LempiShell";
+import { RpsShell } from "./rps/RpsShell";
 import { useSessionStore } from "./session/sessionStore";
 import { useGameStore } from "./store/gameStore";
 import { BetControls } from "./ui/BetControls";
@@ -178,5 +179,6 @@ export const App: React.FC = () => {
 
 	if (errorScreen) return errorScreen;
 	if (params?.gameCode === "lempi-crash") return <LempiShell />;
+	if (params?.gameCode === "rps-tournament") return <RpsShell />;
 	return <GameShell />;
 };

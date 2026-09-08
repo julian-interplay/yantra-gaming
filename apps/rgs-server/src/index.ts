@@ -14,6 +14,7 @@ import { metricsRouter } from './routes/metrics.js';
 import { initEngineRegistry } from './services/EngineRegistry.js';
 import { pendingJobRunner } from './services/PendingJobRunner.js';
 import { reconciliationJob } from './services/ReconciliationJob.js';
+import { initRpsTournamentService } from './services/RpsTournamentService.js';
 import { webhookDispatcher } from './services/WebhookDispatcher.js';
 import { attachGameSocket } from './socket/gameSocket.js';
 
@@ -94,6 +95,7 @@ async function main(): Promise<void> {
   });
 
   initEngineRegistry(io);
+  const rpsTournamentService = initRpsTournamentService(io);
   attachGameSocket(io);
 
   httpServer.listen(config.port, () => {
@@ -108,6 +110,7 @@ async function main(): Promise<void> {
   pendingJobRunner.start();
   reconciliationJob.start();
   webhookDispatcher.start();
+  rpsTournamentService.start();
 
   // Start engines for operators marked active.
   const registry = (await import('./services/EngineRegistry.js')).getEngineRegistry();
@@ -153,6 +156,7 @@ async function main(): Promise<void> {
     pendingJobRunner.stop();
     reconciliationJob.stop();
     webhookDispatcher.stop();
+    rpsTournamentService.stop();
     const { clockSkewMonitor } = await import('./services/ClockSkewMonitor.js');
     clockSkewMonitor.stop();
     await registry.stopAll();

@@ -28,7 +28,7 @@ interface Wallet {
 }
 
 // What kind of ledger entry a transactionUuid represents.
-type TxKind = 'bet' | 'win';
+type TxKind = 'bet' | 'win' | 'award';
 
 interface LedgerEntry {
   kind: TxKind;
@@ -152,6 +152,32 @@ class WalletStore {
 
     wallet.balanceMicro += amountMicro;
     this.ledger.set(transactionUuid, { kind: 'win', key, amountMicro, rolledBack: false });
+    return { status: RsStatus.OK, balanceMicro: wallet.balanceMicro };
+  }
+
+  award(
+    operatorId: string,
+    playerRef: string,
+    transactionUuid: string,
+    amountMicro: bigint,
+  ): { status: RsStatusT; balanceMicro: bigint } {
+    const key = keyOf(operatorId, playerRef);
+    const wallet = this.getOrInit(key);
+
+    const existing = this.ledger.get(transactionUuid);
+    if (existing) {
+      if (existing.kind !== 'award' || existing.key !== key || existing.amountMicro !== amountMicro) {
+        return { status: RsStatus.DUPLICATE_TRANSACTION, balanceMicro: wallet.balanceMicro };
+      }
+      return { status: RsStatus.OK, balanceMicro: wallet.balanceMicro };
+    }
+
+    if (amountMicro < 0n) {
+      return { status: RsStatus.WRONG_SYNTAX, balanceMicro: wallet.balanceMicro };
+    }
+
+    wallet.balanceMicro += amountMicro;
+    this.ledger.set(transactionUuid, { kind: 'award', key, amountMicro, rolledBack: false });
     return { status: RsStatus.OK, balanceMicro: wallet.balanceMicro };
   }
 
